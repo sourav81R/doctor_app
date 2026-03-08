@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import doctorLogo from "../assets/Doctor.jpeg";
 
 export default function MedicalNavbar() {
     const [open, setOpen] = useState(false);
@@ -12,11 +13,22 @@ export default function MedicalNavbar() {
         { name: "Contact", path: "/contact" },
     ];
 
+    const brandMark = (
+        <>
+            <img
+                src={doctorLogo}
+                alt="Mukti logo"
+                className="h-10 w-10 rounded-full object-cover ring-2 ring-blue-200"
+            />
+            <span>MUKTI</span>
+        </>
+    );
+
     return (
         <div className="overflow-x-hidden">
             <div className="fixed left-0 top-0 z-50 w-full shadow-md">
                 <div className="hidden items-center justify-between gap-4 bg-gray-100 px-6 py-4 lg:flex">
-                    <h1 className="text-4xl font-bold text-blue-600">MUKTI</h1>
+                    <h1 className="flex items-center gap-3 text-4xl font-bold text-blue-600">{brandMark}</h1>
 
                     <div className="flex flex-wrap items-center justify-end gap-4 text-sm xl:gap-8">
                         <p>+880123456789</p>
@@ -27,8 +39,8 @@ export default function MedicalNavbar() {
 
                 <nav className="bg-gradient-to-r from-blue-900 to-blue-600 text-white">
                     <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
-                        <NavLink to="/" className="text-2xl font-bold tracking-wide lg:hidden">
-                            MUKTI
+                        <NavLink to="/" className="flex items-center gap-3 text-2xl font-bold tracking-wide lg:hidden">
+                            {brandMark}
                         </NavLink>
 
                         <ul className="hidden gap-8 font-medium lg:flex">
@@ -79,7 +91,7 @@ export default function MedicalNavbar() {
                         }`}
                     >
                         <div className="mb-10 flex items-center justify-between">
-                            <span className="text-xl font-bold tracking-wide">MUKTI</span>
+                            <span className="flex items-center gap-3 text-xl font-bold tracking-wide">{brandMark}</span>
                             <button
                                 type="button"
                                 onClick={() => setOpen(false)}
