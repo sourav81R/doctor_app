@@ -1,12 +1,12 @@
 import { jsPDF } from "jspdf";
 import { getDoctorByName } from "../data/doctors";
 
-const logoModules = import.meta.glob("../assets/Doctor(1).jpeg", {
+const templateModules = import.meta.glob("../assets/Doctor(1).jpeg", {
   eager: true,
   import: "default",
 });
 
-const logoImageSrc = Object.values(logoModules)[0] ?? null;
+const templateImageSrc = Object.values(templateModules)[0] ?? null;
 const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const HISTORY_ITEMS = [
@@ -24,11 +24,19 @@ const HISTORY_ITEMS = [
 
 const COLORS = {
   page: [248, 247, 245],
-  ink: [18, 18, 18],
-  brand: [166, 121, 77],
-  frame: [171, 136, 95],
-  watermark: [236, 228, 219],
+  ink: [16, 16, 16],
+  accent: [171, 136, 95],
+  watermark: [230, 220, 210],
 };
+
+const IMAGE_CROPS = {
+  headerLogo: { sx: 680, sy: 0, sw: 420, sh: 195, alpha: 1, type: "PNG" },
+  watermarkLogo: { sx: 630, sy: 0, sw: 430, sh: 190, alpha: 0.1, type: "PNG" },
+};
+
+function hasValue(value) {
+  return value !== undefined && value !== null && String(value).trim() !== "";
+}
 
 function formatDate(value, fallback = "") {
   if (!value) {
@@ -84,11 +92,7 @@ function getFileName(firstName, lastName) {
   return `appointment_${slug || "patient"}.pdf`;
 }
 
-function hasValue(value) {
-  return value !== undefined && value !== null && String(value).trim() !== "";
-}
-
-async function loadImageDataUrl(src) {
+async function loadCroppedImageDataUrl(src, crop) {
   if (!src) {
     return null;
   }
@@ -98,8 +102,8 @@ async function loadImageDataUrl(src) {
 
     image.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
+      canvas.width = crop?.sw ?? image.width;
+      canvas.height = crop?.sh ?? image.height;
 
       const context = canvas.getContext("2d");
       if (!context) {
@@ -107,8 +111,28 @@ async function loadImageDataUrl(src) {
         return;
       }
 
-      context.drawImage(image, 0, 0);
-      resolve(canvas.toDataURL("image/jpeg", 0.95));
+      if (crop?.alpha !== undefined) {
+        context.globalAlpha = crop.alpha;
+      }
+
+      if (crop) {
+        context.drawImage(
+          image,
+          crop.sx,
+          crop.sy,
+          crop.sw,
+          crop.sh,
+          0,
+          0,
+          crop.sw,
+          crop.sh,
+        );
+      } else {
+        context.drawImage(image, 0, 0);
+      }
+
+      const type = crop?.type === "PNG" ? "image/png" : "image/jpeg";
+      resolve(canvas.toDataURL(type, 0.98));
     };
 
     image.onerror = () => resolve(null);
@@ -118,7 +142,7 @@ async function loadImageDataUrl(src) {
 
 function drawParallelCorner(doc, corner) {
   doc.setDrawColor(...COLORS.ink);
-  doc.setLineWidth(1.3);
+  doc.setLineWidth(1.1);
 
   if (corner === "top-left") {
     doc.line(4, 1, 4, 42);
@@ -136,89 +160,108 @@ function drawParallelCorner(doc, corner) {
 
 function drawDottedLine(doc, x1, y, x2) {
   doc.setDrawColor(...COLORS.ink);
-  doc.setLineWidth(0.35);
-  doc.setLineDashPattern([0.7, 1.3], 0);
+  doc.setLineWidth(0.3);
+  doc.setLineDashPattern([0.7, 1.2], 0);
   doc.line(x1, y, x2, y);
   doc.setLineDashPattern([], 0);
 }
 
-function drawFieldLine(doc, label, value, x, y, width, align = "left") {
+function drawFieldLine(doc, label, value, x, y, width, options = {}) {
+  const {
+    align = "left",
+    fontSize = 8.6,
+    lineYOffset = 0.7,
+  } = options;
+
   doc.setFont("courier", "bold");
-  doc.setFontSize(8.5);
+  doc.setFontSize(fontSize);
   doc.setTextColor(...COLORS.ink);
   doc.text(`${label}:`, x, y);
 
   const textWidth = doc.getTextWidth(`${label}:`);
   const lineStart = x + textWidth + 2;
   const lineEnd = x + width;
-  drawDottedLine(doc, lineStart, y + 0.5, lineEnd);
+  drawDottedLine(doc, lineStart, y + lineYOffset, lineEnd);
 
   if (!hasValue(value)) {
     return;
   }
 
-  doc.setFont("courier", "normal");
-  doc.setFontSize(8.5);
+  const safeValue = String(value).trim();
+  doc.setFont("courier", "bold");
 
   if (align === "right") {
-    doc.text(String(value), lineEnd - 1, y, { align: "right" });
+    doc.text(safeValue, lineEnd - 0.6, y, { align: "right" });
     return;
   }
 
-  doc.text(String(value), lineStart + 1, y);
+  doc.text(safeValue, lineStart + 1, y);
 }
 
 function drawHistoryItem(doc, label, x, y, checked) {
   doc.setDrawColor(...COLORS.ink);
-  doc.setLineWidth(0.35);
+  doc.setLineWidth(0.32);
   doc.circle(x, y - 0.8, 1.8);
 
   if (checked) {
-    doc.setLineWidth(0.45);
-    doc.line(x - 0.8, y - 0.6, x - 0.15, y + 0.15);
-    doc.line(x - 0.15, y + 0.15, x + 1.1, y - 1.2);
+    doc.setFont("courier", "bold");
+    doc.setFontSize(9);
+    doc.text("X", x, y, { align: "center" });
   }
 
-  doc.setFont("courier", "normal");
+  doc.setFont("courier", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...COLORS.ink);
-  doc.text(label, x + 3.5, y);
+  doc.text(label, x + 5, y);
 }
 
-function drawWrappedValue(doc, value, x, y, width, lineHeight = 4.1) {
+function drawWrappedValue(doc, value, x, y, width, options = {}) {
   if (!hasValue(value)) {
     return y;
   }
 
-  const lines = doc.splitTextToSize(String(value), width);
-  doc.text(lines, x, y);
-  return y + lines.length * lineHeight;
+  const {
+    fontSize = 8.2,
+    maxLines,
+    lineHeight = 3.9,
+  } = options;
+
+  doc.setFont("courier", "bold");
+  doc.setFontSize(fontSize);
+  doc.setTextColor(...COLORS.ink);
+
+  const lines = doc.splitTextToSize(String(value).trim(), width);
+  const visibleLines = maxLines ? lines.slice(0, maxLines) : lines;
+  doc.text(visibleLines, x, y);
+  return y + visibleLines.length * lineHeight;
 }
 
-function drawWatermark(doc) {
+function drawWatermark(doc, watermarkLogo) {
+  if (watermarkLogo) {
+    doc.addImage(watermarkLogo, "PNG", 27, 105, 145, 67, undefined, "FAST");
+    return;
+  }
+
   doc.setTextColor(...COLORS.watermark);
   doc.setFont("times", "italic");
   doc.setFontSize(64);
-  doc.text("DR. MEDMATE", 58, 192, { angle: 48 });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(22);
-  doc.text("Complete Care", 82, 211, { angle: 48 });
+  doc.text("DR. MEDMATE", 55, 190, { angle: 44 });
 }
 
-function drawHeader(doc, doctor, logoImage) {
+function drawHeader(doc, doctor, headerLogo) {
   drawParallelCorner(doc, "top-left");
 
   doc.setTextColor(...COLORS.ink);
   doc.setFont("times", "normal");
-  doc.setFontSize(20);
+  doc.setFontSize(19);
   doc.text(doctor.name, 48, 14, { align: "center" });
 
-  doc.setDrawColor(...COLORS.frame);
-  doc.setLineWidth(0.5);
-  doc.line(23, 18, 74, 18);
+  doc.setDrawColor(...COLORS.accent);
+  doc.setLineWidth(0.45);
+  doc.line(22, 18, 74, 18);
 
   doc.setFont("courier", "bold");
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.3);
   doc.text((doctor.degree || "").toUpperCase(), 48, 22, { align: "center" });
 
   const specializationLines = doc.splitTextToSize((doctor.specialization || "").toUpperCase(), 62);
@@ -227,64 +270,46 @@ function drawHeader(doc, doctor, logoImage) {
   let currentY = 26 + specializationLines.length * 4.2;
 
   if (hasValue(doctor.fellowship)) {
-    doc.setFont("courier", "normal");
     doc.text(String(doctor.fellowship), 48, currentY, { align: "center" });
     currentY += 4.2;
   }
 
-  doc.setFont("courier", "bold");
   doc.text(`Reg. No. ${doctor.regNo || ""}`, 48, currentY, { align: "center" });
 
-  if (logoImage) {
-    doc.addImage(logoImage, "JPEG", 124, 4, 66, 22);
+  if (headerLogo) {
+    doc.addImage(headerLogo, "PNG", 128, 3, 67, 30, undefined, "FAST");
   } else {
-    doc.setTextColor(...COLORS.brand);
-    doc.setFont("times", "italic");
-    doc.setFontSize(32);
-    doc.text("Dr.", 132, 16);
-
-    doc.setTextColor(...COLORS.ink);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.text("MEDMATE", 166, 17, { align: "center" });
-
-    doc.setTextColor(...COLORS.brand);
+    doc.setFontSize(16);
+    doc.text("DR MEDMATE", 166, 16, { align: "center" });
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.text(doctor.clinic || "Complete Care", 166, 23, { align: "center" });
+    doc.setFontSize(10);
+    doc.text(doctor.phone || "", 166, 23, { align: "center" });
+    doc.text(doctor.email || "", 166, 29, { align: "center" });
   }
 
-  doc.setTextColor(...COLORS.ink);
-  doc.setFont("times", "bold");
-  doc.setFontSize(10.5);
-  doc.text(doctor.phone || "", 168, 31, { align: "center" });
-
-  doc.setFont("times", "normal");
-  doc.setFontSize(10);
-  doc.text(doctor.email || "", 168, 37, { align: "center" });
-
-  drawDottedLine(doc, 10, 43, 195);
+  drawDottedLine(doc, 10, 43, 196);
 }
 
 function drawPatientDetails(doc, formData, patientName, ageSex) {
-  const printedDate = formatDate(formData.appointmentDate || new Date());
+  const printedDate = formatDate(formData.appointmentDate || new Date(), formatDate(new Date()));
 
-  drawFieldLine(doc, "Date", printedDate, 4, 55, 44);
+  drawFieldLine(doc, "Date", printedDate, 4, 55, 45);
   doc.setFont("courier", "bold");
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.4);
   doc.text("||", 48.5, 55);
   drawFieldLine(doc, "Name", patientName, 53, 55, 149);
   doc.text("||", 149.5, 55);
-  drawFieldLine(doc, "Age/Sex", ageSex, 153, 55, 198, "right");
+  drawFieldLine(doc, "Age/Sex", ageSex, 153, 55, 198, { align: "right" });
 
-  drawFieldLine(doc, "GCS", formData.gcs, 0.5, 67, 51);
+  drawFieldLine(doc, "GCS", formData.gcs, 0.8, 67, 52);
   drawFieldLine(doc, "BP", formData.bp, 55, 67, 109);
   drawFieldLine(doc, "PR", formData.pr, 116, 67, 159);
   drawFieldLine(doc, "RR", formData.rr, 166, 67, 202);
 
-  drawFieldLine(doc, "RBS", formData.rbs, 0.5, 79, 51);
-  drawFieldLine(doc, "Height", formData.height, 54, 79, 93);
-  drawFieldLine(doc, "Weight", formData.weight, 100, 79, 145);
+  drawFieldLine(doc, "RBS", formData.rbs, 0.8, 79, 52);
+  drawFieldLine(doc, "Height", formData.height, 54, 79, 95);
+  drawFieldLine(doc, "Weight", formData.weight, 100, 79, 147);
   drawFieldLine(doc, "SpO2", formData.spo2, 153, 79, 204);
 }
 
@@ -304,17 +329,15 @@ function drawHistorySection(doc, formData) {
 }
 
 function drawMaternalBox(doc, formData) {
-  doc.setDrawColor(...COLORS.frame);
-  doc.setLineWidth(0.45);
+  doc.setDrawColor(...COLORS.accent);
+  doc.setLineWidth(0.4);
   doc.roundedRect(156, 81, 45, 78, 6, 6);
 
   doc.setTextColor(...COLORS.ink);
   doc.setFont("courier", "bold");
-  doc.setFontSize(8.3);
+  doc.setFontSize(7.9);
   doc.text("Maternal History:", 159, 89);
 
-  doc.setFont("courier", "normal");
-  doc.setFontSize(8.2);
   doc.text("LMP:", 159, 108);
   doc.text("POG:", 159, 115);
   doc.text("EDD:", 159, 122);
@@ -322,7 +345,7 @@ function drawMaternalBox(doc, formData) {
   doc.text("Comments:", 159, 148);
 
   if (hasValue(formData.lmp)) {
-    doc.text(String(formData.lmp), 171, 108);
+    doc.text(formatDate(formData.lmp), 171, 108);
   }
 
   if (hasValue(formData.pog)) {
@@ -330,60 +353,65 @@ function drawMaternalBox(doc, formData) {
   }
 
   if (hasValue(formData.edd)) {
-    doc.text(String(formData.edd), 171, 122);
+    doc.text(formatDate(formData.edd), 171, 122);
   }
 
   if (hasValue(formData.allergy)) {
-    const allergyLines = doc.splitTextToSize(String(formData.allergy), 33);
-    doc.text(allergyLines, 159, 140);
+    drawWrappedValue(doc, formData.allergy, 159, 140, 33, { fontSize: 7.3, maxLines: 3, lineHeight: 3.2 });
   }
 
   const commentsText = formData.comments || formData.message;
   if (hasValue(commentsText)) {
-    const commentLines = doc.splitTextToSize(String(commentsText), 33);
-    doc.text(commentLines, 159, 153);
+    drawWrappedValue(doc, commentsText, 159, 153, 33, { fontSize: 7.3, maxLines: 4, lineHeight: 3.2 });
   }
 }
 
-function drawPrescriptionBody(doc, formData) {
-  drawWatermark(doc);
+function drawSupplementalDetails(doc, formData) {
+  drawWatermark(doc, formData.watermarkLogo);
 
   let bodyY = 170;
 
-  if (hasValue(formData.address)) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(8.4);
-    doc.setTextColor(...COLORS.ink);
-    doc.text("Address:", 10, bodyY);
-    bodyY = drawWrappedValue(doc, formData.address, 10, bodyY + 5, 138, 4.2) + 4;
-  }
-
   if (hasValue(formData.contactNumber)) {
     doc.setFont("courier", "bold");
-    doc.setFontSize(8.4);
+    doc.setFontSize(8.6);
+    doc.setTextColor(...COLORS.ink);
     doc.text("Contact:", 10, bodyY);
-    doc.setFont("courier", "normal");
-    doc.text(String(formData.contactNumber), 28, bodyY);
-    bodyY += 8;
+    doc.text(String(formData.contactNumber), 10, bodyY + 5);
+    bodyY += 15;
   }
 
-  if (hasValue(formData.message)) {
+  if (hasValue(formData.address)) {
     doc.setFont("courier", "bold");
-    doc.setFontSize(8.4);
-    doc.text("Notes:", 10, bodyY);
-    drawWrappedValue(doc, formData.message, 10, bodyY + 5, 138, 4.2);
+    doc.setFontSize(8.6);
+    doc.text("Address:", 10, bodyY);
+    bodyY = drawWrappedValue(doc, formData.address, 10, bodyY + 5, 50, {
+      fontSize: 8,
+      maxLines: 3,
+      lineHeight: 3.8,
+    }) + 4;
+  }
+
+  if (hasValue(formData.message) && !hasValue(formData.comments)) {
+    doc.setFont("courier", "bold");
+    doc.setFontSize(8.6);
+    doc.text("Notes:", 68, 170);
+    drawWrappedValue(doc, formData.message, 68, 175, 76, {
+      fontSize: 8,
+      maxLines: 6,
+      lineHeight: 3.8,
+    });
   }
 }
 
-function drawTemplate(doc, doctor, formData, patientName, ageSex, logoImage) {
+function drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo) {
   doc.setFillColor(...COLORS.page);
   doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
 
-  drawHeader(doc, doctor, logoImage);
+  drawHeader(doc, doctor, headerLogo);
   drawPatientDetails(doc, formData, patientName, ageSex);
   drawHistorySection(doc, formData);
   drawMaternalBox(doc, formData);
-  drawPrescriptionBody(doc, formData);
+  drawSupplementalDetails(doc, { ...formData, watermarkLogo });
   drawParallelCorner(doc, "bottom-right");
 }
 
@@ -393,8 +421,12 @@ export async function generateAppointmentPDF(formData) {
   const patientName = getPatientName(formData);
   const age = calculateAge(formData.dateOfBirth);
   const ageSex = [age, formData.gender].filter(Boolean).join(" / ");
-  const logoImage = await loadImageDataUrl(logoImageSrc);
 
-  drawTemplate(doc, doctor, formData, patientName, ageSex, logoImage);
+  const [headerLogo, watermarkLogo] = await Promise.all([
+    loadCroppedImageDataUrl(templateImageSrc, IMAGE_CROPS.headerLogo),
+    loadCroppedImageDataUrl(templateImageSrc, IMAGE_CROPS.watermarkLogo),
+  ]);
+
+  drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo);
   doc.save(getFileName(formData.firstName, formData.lastName));
 }
