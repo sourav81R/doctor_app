@@ -5,8 +5,13 @@ const logoModules = import.meta.glob("../assets/Prescription_logo.png", {
   eager: true,
   import: "default",
 });
+const painScaleModules = import.meta.glob("../assets/Prescription_bottom.png", {
+  eager: true,
+  import: "default",
+});
 
 const logoImageSrc = Object.values(logoModules)[0] ?? null;
+const painScaleImageSrc = Object.values(painScaleModules)[0] ?? null;
 const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const HISTORY_ITEMS = [
@@ -146,7 +151,14 @@ async function loadImageDataUrl(src, options = {}) {
 
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.globalAlpha = options.alpha ?? 1;
-      context.drawImage(image, 0, 0);
+      if (options.crop) {
+        const { x, y, width, height } = options.crop;
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(image, x, y, width, height, 0, 0, width, height);
+      } else {
+        context.drawImage(image, 0, 0);
+      }
       resolve(canvas.toDataURL("image/png"));
     };
 
@@ -270,7 +282,12 @@ function drawWrappedValue(doc, value, x, y, width, options = {}) {
 
 function drawWatermark(doc, watermarkLogo) {
   if (watermarkLogo) {
-    doc.addImage(watermarkLogo, "PNG", 38, 126, 128, 50.8, undefined, "FAST", 318);
+    const width = 140;
+    const height = width * (174 / 439);
+    const x = (PAGE_WIDTH - width) / 2 + 18;
+    const y = (PAGE_HEIGHT - height) / 2 + 38;
+
+    doc.addImage(watermarkLogo, "PNG", x, y, width, height, undefined, "FAST", 42);
     return;
   }
 
@@ -278,6 +295,20 @@ function drawWatermark(doc, watermarkLogo) {
   doc.setFont("times", "italic");
   doc.setFontSize(64);
   doc.text("DR. MEDMATE", 55, 190, { angle: 44 });
+}
+
+function drawPainScale(doc, painScaleImage) {
+  if (!painScaleImage) {
+    return;
+  }
+
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const width = 110;
+  const height = width * (195 / 701);
+  const x = 28;
+  const y = pageHeight - height - 6;
+
+  doc.addImage(painScaleImage, "PNG", x, y, width, height, undefined, "FAST");
 }
 
 function drawHeader(doc, doctor, headerLogo) {
@@ -452,7 +483,7 @@ function drawSupplementalDetails(doc, formData) {
   }
 }
 
-function drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo) {
+function drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo, painScaleImage) {
   doc.setFillColor(...COLORS.page);
   doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
 
@@ -461,6 +492,7 @@ function drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, wa
   drawHistorySection(doc, formData);
   drawMaternalBox(doc, formData);
   drawSupplementalDetails(doc, { ...formData, watermarkLogo });
+  drawPainScale(doc, painScaleImage);
   drawParallelCorner(doc, "bottom-right");
 }
 
@@ -471,11 +503,12 @@ export async function generateAppointmentPDF(formData) {
   const age = calculateAge(formData.dateOfBirth);
   const ageSex = [age, formData.gender].filter(Boolean).join(" / ");
 
-  const [headerLogo, watermarkLogo] = await Promise.all([
+  const [headerLogo, watermarkLogo, painScaleImage] = await Promise.all([
     loadImageDataUrl(logoImageSrc),
     loadImageDataUrl(logoImageSrc, { alpha: 0.11 }),
+    loadImageDataUrl(painScaleImageSrc),
   ]);
 
-  drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo);
+  drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo, painScaleImage);
   doc.save(getFileName(formData.firstName, formData.lastName));
 }
