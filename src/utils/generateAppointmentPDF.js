@@ -1,12 +1,12 @@
 import { jsPDF } from "jspdf";
 import { getDoctorByName } from "../data/doctors";
 
-const templateModules = import.meta.glob("../assets/Doctor(1).jpeg", {
+const logoModules = import.meta.glob("../assets/Prescription_logo.png", {
   eager: true,
   import: "default",
 });
 
-const templateImageSrc = Object.values(templateModules)[0] ?? null;
+const logoImageSrc = Object.values(logoModules)[0] ?? null;
 const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const HISTORY_ITEMS = [
@@ -27,11 +27,6 @@ const COLORS = {
   ink: [16, 16, 16],
   accent: [171, 136, 95],
   watermark: [230, 220, 210],
-};
-
-const IMAGE_CROPS = {
-  headerLogo: { sx: 680, sy: 0, sw: 420, sh: 195, alpha: 1, type: "PNG" },
-  watermarkLogo: { sx: 630, sy: 0, sw: 430, sh: 190, alpha: 0.1, type: "PNG" },
 };
 
 function hasValue(value) {
@@ -92,7 +87,45 @@ function getFileName(firstName, lastName) {
   return `appointment_${slug || "patient"}.pdf`;
 }
 
-async function loadCroppedImageDataUrl(src, crop) {
+function fitTextToWidth(doc, text, maxWidth, font = "courier", style = "bold", startSize = 12, minSize = 7) {
+  const safeText = String(text ?? "").trim();
+  let fontSize = startSize;
+
+  doc.setFont(font, style);
+  doc.setFontSize(fontSize);
+
+  while (fontSize > minSize && doc.getTextWidth(safeText) > maxWidth) {
+    fontSize -= 0.4;
+    doc.setFontSize(fontSize);
+  }
+
+  return { text: safeText, fontSize };
+}
+
+function truncateTextToWidth(doc, text, maxWidth) {
+  const safeText = String(text ?? "").trim();
+  if (!safeText) {
+    return "";
+  }
+
+  if (doc.getTextWidth(safeText) <= maxWidth) {
+    return safeText;
+  }
+
+  let candidate = safeText;
+  while (candidate.length > 0) {
+    const shortened = `${candidate.trimEnd()}...`;
+    if (doc.getTextWidth(shortened) <= maxWidth) {
+      return shortened;
+    }
+
+    candidate = candidate.slice(0, -1);
+  }
+
+  return "";
+}
+
+async function loadImageDataUrl(src, options = {}) {
   if (!src) {
     return null;
   }
@@ -102,8 +135,8 @@ async function loadCroppedImageDataUrl(src, crop) {
 
     image.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = crop?.sw ?? image.width;
-      canvas.height = crop?.sh ?? image.height;
+      canvas.width = image.width;
+      canvas.height = image.height;
 
       const context = canvas.getContext("2d");
       if (!context) {
@@ -111,28 +144,10 @@ async function loadCroppedImageDataUrl(src, crop) {
         return;
       }
 
-      if (crop?.alpha !== undefined) {
-        context.globalAlpha = crop.alpha;
-      }
-
-      if (crop) {
-        context.drawImage(
-          image,
-          crop.sx,
-          crop.sy,
-          crop.sw,
-          crop.sh,
-          0,
-          0,
-          crop.sw,
-          crop.sh,
-        );
-      } else {
-        context.drawImage(image, 0, 0);
-      }
-
-      const type = crop?.type === "PNG" ? "image/png" : "image/jpeg";
-      resolve(canvas.toDataURL(type, 0.98));
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.globalAlpha = options.alpha ?? 1;
+      context.drawImage(image, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
     };
 
     image.onerror = () => resolve(null);
@@ -171,6 +186,9 @@ function drawFieldLine(doc, label, value, x, y, width, options = {}) {
     align = "left",
     fontSize = 8.6,
     lineYOffset = 0.7,
+    valueOffset = 0.7,
+    gap = 3.2,
+    inputPadding = 5.5,
   } = options;
 
   doc.setFont("courier", "bold");
@@ -179,23 +197,32 @@ function drawFieldLine(doc, label, value, x, y, width, options = {}) {
   doc.text(`${label}:`, x, y);
 
   const textWidth = doc.getTextWidth(`${label}:`);
-  const lineStart = x + textWidth + 2;
-  const lineEnd = x + width;
+  const lineStart = x + textWidth + gap;
+  const lineEnd = width;
   drawDottedLine(doc, lineStart, y + lineYOffset, lineEnd);
 
   if (!hasValue(value)) {
     return;
   }
 
-  const safeValue = String(value).trim();
+  const maxWidth = lineEnd - lineStart - 1.5;
+  const safeValue = truncateTextToWidth(doc, value, maxWidth);
   doc.setFont("courier", "bold");
+  doc.setFontSize(fontSize);
+  const textWidthValue = doc.getTextWidth(safeValue);
 
   if (align === "right") {
-    doc.text(safeValue, lineEnd - 0.6, y, { align: "right" });
+    const rectX = lineEnd - textWidthValue - 1.8;
+    doc.setFillColor(...COLORS.page);
+    doc.rect(rectX, y - 2.8, textWidthValue + 2.2, 4.2, "F");
+    doc.text(safeValue, lineEnd - 0.6, y + valueOffset, { align: "right" });
     return;
   }
 
-  doc.text(safeValue, lineStart + 1, y);
+  const textStart = lineStart + inputPadding;
+  doc.setFillColor(...COLORS.page);
+  doc.rect(textStart - 0.8, y - 2.8, textWidthValue + 2.4, 4.2, "F");
+  doc.text(safeValue, textStart, y + valueOffset);
 }
 
 function drawHistoryItem(doc, label, x, y, checked) {
@@ -204,9 +231,9 @@ function drawHistoryItem(doc, label, x, y, checked) {
   doc.circle(x, y - 0.8, 1.8);
 
   if (checked) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(9);
-    doc.text("X", x, y, { align: "center" });
+    doc.setLineWidth(0.4);
+    doc.line(x - 0.9, y - 0.9, x - 0.2, y - 0.1);
+    doc.line(x - 0.2, y - 0.1, x + 1.1, y - 1.5);
   }
 
   doc.setFont("courier", "bold");
@@ -238,7 +265,7 @@ function drawWrappedValue(doc, value, x, y, width, options = {}) {
 
 function drawWatermark(doc, watermarkLogo) {
   if (watermarkLogo) {
-    doc.addImage(watermarkLogo, "PNG", 27, 105, 145, 67, undefined, "FAST");
+    doc.addImage(watermarkLogo, "PNG", 38, 126, 128, 50.8, undefined, "FAST", 318);
     return;
   }
 
@@ -253,31 +280,33 @@ function drawHeader(doc, doctor, headerLogo) {
 
   doc.setTextColor(...COLORS.ink);
   doc.setFont("times", "normal");
-  doc.setFontSize(19);
-  doc.text(doctor.name, 48, 14, { align: "center" });
+  const fittedDoctorName = fitTextToWidth(doc, doctor.name, 74, "times", "normal", 19, 13);
+  doc.setFont("times", "normal");
+  doc.setFontSize(fittedDoctorName.fontSize);
+  doc.text(fittedDoctorName.text, 52, 16, { align: "center" });
 
   doc.setDrawColor(...COLORS.accent);
   doc.setLineWidth(0.45);
-  doc.line(22, 18, 74, 18);
+  doc.line(26, 19.5, 78, 19.5);
 
   doc.setFont("courier", "bold");
-  doc.setFontSize(8.3);
-  doc.text((doctor.degree || "").toUpperCase(), 48, 22, { align: "center" });
+  doc.setFontSize(8.1);
+  doc.text((doctor.degree || "").toUpperCase(), 52, 24, { align: "center" });
 
   const specializationLines = doc.splitTextToSize((doctor.specialization || "").toUpperCase(), 62);
-  doc.text(specializationLines, 48, 26, { align: "center" });
+  doc.text(specializationLines, 52, 28, { align: "center" });
 
-  let currentY = 26 + specializationLines.length * 4.2;
+  let currentY = 28 + specializationLines.length * 4.2;
 
   if (hasValue(doctor.fellowship)) {
-    doc.text(String(doctor.fellowship), 48, currentY, { align: "center" });
+    doc.text(String(doctor.fellowship), 52, currentY, { align: "center" });
     currentY += 4.2;
   }
 
-  doc.text(`Reg. No. ${doctor.regNo || ""}`, 48, currentY, { align: "center" });
+  doc.text(`Reg. No. ${doctor.regNo || ""}`, 52, currentY, { align: "center" });
 
   if (headerLogo) {
-    doc.addImage(headerLogo, "PNG", 128, 3, 67, 30, undefined, "FAST");
+    doc.addImage(headerLogo, "PNG", 124, 4, 74, 29.4, undefined, "FAST");
   } else {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
@@ -294,23 +323,23 @@ function drawHeader(doc, doctor, headerLogo) {
 function drawPatientDetails(doc, formData, patientName, ageSex) {
   const printedDate = formatDate(formData.appointmentDate || new Date(), formatDate(new Date()));
 
-  drawFieldLine(doc, "Date", printedDate, 4, 55, 45);
+  drawFieldLine(doc, "Date", printedDate, 4, 55, 45, { gap: 3.6 });
   doc.setFont("courier", "bold");
   doc.setFontSize(8.4);
   doc.text("||", 48.5, 55);
-  drawFieldLine(doc, "Name", patientName, 53, 55, 149);
+  drawFieldLine(doc, "Name", patientName, 53, 55, 149, { gap: 3.8 });
   doc.text("||", 149.5, 55);
-  drawFieldLine(doc, "Age/Sex", ageSex, 153, 55, 198, { align: "right" });
+  drawFieldLine(doc, "Age/Sex", ageSex, 153, 55, 198, { align: "right", gap: 3.6 });
 
-  drawFieldLine(doc, "GCS", formData.gcs, 0.8, 67, 52);
-  drawFieldLine(doc, "BP", formData.bp, 55, 67, 109);
-  drawFieldLine(doc, "PR", formData.pr, 116, 67, 159);
-  drawFieldLine(doc, "RR", formData.rr, 166, 67, 202);
+  drawFieldLine(doc, "GCS", formData.gcs, 0.8, 67, 52, { gap: 3.4 });
+  drawFieldLine(doc, "BP", formData.bp, 55, 67, 109, { gap: 3.4 });
+  drawFieldLine(doc, "PR", formData.pr, 116, 67, 159, { gap: 3.4 });
+  drawFieldLine(doc, "RR", formData.rr, 166, 67, 202, { gap: 3.4 });
 
-  drawFieldLine(doc, "RBS", formData.rbs, 0.8, 79, 52);
-  drawFieldLine(doc, "Height", formData.height, 54, 79, 95);
-  drawFieldLine(doc, "Weight", formData.weight, 100, 79, 147);
-  drawFieldLine(doc, "SpO2", formData.spo2, 153, 79, 204);
+  drawFieldLine(doc, "RBS", formData.rbs, 0.8, 79, 52, { gap: 3.4 });
+  drawFieldLine(doc, "Height", formData.height, 54, 79, 95, { gap: 3.4 });
+  drawFieldLine(doc, "Weight", formData.weight, 100, 79, 147, { gap: 3.4 });
+  drawFieldLine(doc, "SpO2", formData.spo2, 153, 79, 204, { gap: 3.4 });
 }
 
 function drawHistorySection(doc, formData) {
@@ -360,9 +389,8 @@ function drawMaternalBox(doc, formData) {
     drawWrappedValue(doc, formData.allergy, 159, 140, 33, { fontSize: 7.3, maxLines: 3, lineHeight: 3.2 });
   }
 
-  const commentsText = formData.comments || formData.message;
-  if (hasValue(commentsText)) {
-    drawWrappedValue(doc, commentsText, 159, 153, 33, { fontSize: 7.3, maxLines: 4, lineHeight: 3.2 });
+  if (hasValue(formData.comments)) {
+    drawWrappedValue(doc, formData.comments, 159, 153, 33, { fontSize: 7.3, maxLines: 4, lineHeight: 3.2 });
   }
 }
 
@@ -391,7 +419,7 @@ function drawSupplementalDetails(doc, formData) {
     }) + 4;
   }
 
-  if (hasValue(formData.message) && !hasValue(formData.comments)) {
+  if (hasValue(formData.message)) {
     doc.setFont("courier", "bold");
     doc.setFontSize(8.6);
     doc.text("Notes:", 68, 170);
@@ -423,8 +451,8 @@ export async function generateAppointmentPDF(formData) {
   const ageSex = [age, formData.gender].filter(Boolean).join(" / ");
 
   const [headerLogo, watermarkLogo] = await Promise.all([
-    loadCroppedImageDataUrl(templateImageSrc, IMAGE_CROPS.headerLogo),
-    loadCroppedImageDataUrl(templateImageSrc, IMAGE_CROPS.watermarkLogo),
+    loadImageDataUrl(logoImageSrc),
+    loadImageDataUrl(logoImageSrc, { alpha: 0.11 }),
   ]);
 
   drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo);
