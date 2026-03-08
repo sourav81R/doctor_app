@@ -188,7 +188,8 @@ function drawFieldLine(doc, label, value, x, y, width, options = {}) {
     lineYOffset = 0.7,
     valueOffset = 0.7,
     gap = 3.2,
-    inputPadding = 5.5,
+    inputPadding = 0.8,
+    eraseLineUnderValue = true,
   } = options;
 
   doc.setFont("courier", "bold");
@@ -213,15 +214,19 @@ function drawFieldLine(doc, label, value, x, y, width, options = {}) {
 
   if (align === "right") {
     const rectX = lineEnd - textWidthValue - 1.8;
-    doc.setFillColor(...COLORS.page);
-    doc.rect(rectX, y - 2.8, textWidthValue + 2.2, 4.2, "F");
+    if (eraseLineUnderValue) {
+      doc.setFillColor(...COLORS.page);
+      doc.rect(rectX, y - 2.8, textWidthValue + 2.2, 4.2, "F");
+    }
     doc.text(safeValue, lineEnd - 0.6, y + valueOffset, { align: "right" });
     return;
   }
 
   const textStart = lineStart + inputPadding;
-  doc.setFillColor(...COLORS.page);
-  doc.rect(textStart - 0.8, y - 2.8, textWidthValue + 2.4, 4.2, "F");
+  if (eraseLineUnderValue) {
+    doc.setFillColor(...COLORS.page);
+    doc.rect(lineStart - 0.2, y - 2.8, textWidthValue + 2, 4.2, "F");
+  }
   doc.text(safeValue, textStart, y + valueOffset);
 }
 
@@ -323,13 +328,29 @@ function drawHeader(doc, doctor, headerLogo) {
 function drawPatientDetails(doc, formData, patientName, ageSex) {
   const printedDate = formatDate(formData.appointmentDate || new Date(), formatDate(new Date()));
 
-  drawFieldLine(doc, "Date", printedDate, 4, 55, 45, { gap: 3.6 });
+  drawFieldLine(doc, "Date", printedDate, 4, 55, 45, {
+    gap: 3.6,
+    lineYOffset: 1.1,
+    valueOffset: -0.1,
+    eraseLineUnderValue: false,
+  });
   doc.setFont("courier", "bold");
   doc.setFontSize(8.4);
   doc.text("||", 48.5, 55);
-  drawFieldLine(doc, "Name", patientName, 53, 55, 149, { gap: 3.8 });
+  drawFieldLine(doc, "Name", patientName, 53, 55, 149, {
+    gap: 3.8,
+    lineYOffset: 1.1,
+    valueOffset: -0.1,
+    eraseLineUnderValue: false,
+  });
   doc.text("||", 149.5, 55);
-  drawFieldLine(doc, "Age/Sex", ageSex, 153, 55, 198, { align: "right", gap: 3.6 });
+  drawFieldLine(doc, "Age/Sex", ageSex, 153, 55, 198, {
+    align: "right",
+    gap: 3.6,
+    lineYOffset: 1.1,
+    valueOffset: -0.1,
+    eraseLineUnderValue: false,
+  });
 
   drawFieldLine(doc, "GCS", formData.gcs, 0.8, 67, 52, { gap: 3.4 });
   drawFieldLine(doc, "BP", formData.bp, 55, 67, 109, { gap: 3.4 });
