@@ -1,6 +1,10 @@
+import { Suspense, lazy } from "react";
+import { Link } from "react-router-dom";
 import pic from "../assets/bg.jpg";
 import doctor from "../assets/group.png";
-import { Specialization } from "./Specialized";
+import LazySection from "./LazySection";
+
+const Specialization = lazy(() => import("./Specialized"));
 
 function HeroSection() {
     return (
@@ -24,22 +28,39 @@ function HeroSection() {
                             To Life For The Whole Family...
                         </h1>
 
-                        <button className="mt-8 w-full rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-xl transition duration-300 hover:scale-105 hover:bg-blue-700 sm:w-auto sm:px-10">
+                        <Link
+                            to="/contact"
+                            className="mt-8 inline-flex w-full justify-center rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-xl transition duration-300 hover:scale-105 hover:bg-blue-700 sm:w-auto sm:px-10"
+                        >
                             Get Appointments
-                        </button>
+                        </Link>
                     </div>
 
                     <div className="flex justify-center lg:justify-end">
                         <img
                             src={doctor}
                             alt="doctor"
+                            decoding="async"
+                            fetchPriority="high"
                             className="w-full max-w-[280px] bg-transparent object-cover drop-shadow-2xl transition duration-500 hover:scale-105 sm:max-w-[360px] md:max-w-[420px] lg:max-w-[480px]"
                         />
                     </div>
                 </div>
             </section>
 
-            <Specialization />
+            <LazySection minHeight={1800}>
+                <Suspense
+                    fallback={
+                        <section className="bg-gray-100 py-16 sm:py-20">
+                            <div className="mx-auto max-w-7xl px-4 sm:px-6">
+                                <div className="h-80 animate-pulse rounded-3xl bg-white/70 shadow-sm" />
+                            </div>
+                        </section>
+                    }
+                >
+                    <Specialization />
+                </Suspense>
+            </LazySection>
         </div>
     );
 }

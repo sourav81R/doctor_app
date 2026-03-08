@@ -64,3 +64,5 @@ export function Specialization() {
         </div>
     );
 }
+
+export default Specialization;

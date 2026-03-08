@@ -1,17 +1,7 @@
-import { jsPDF } from "jspdf";
 import { getDoctorByName } from "../data/doctors";
 
-const logoModules = import.meta.glob("../assets/Prescription_logo.png", {
-  eager: true,
-  import: "default",
-});
-const painScaleModules = import.meta.glob("../assets/Prescription_bottom.png", {
-  eager: true,
-  import: "default",
-});
-
-const logoImageSrc = Object.values(logoModules)[0] ?? null;
-const painScaleImageSrc = Object.values(painScaleModules)[0] ?? null;
+const logoImageSrc = new URL("../assets/Prescription_logo.png", import.meta.url).href;
+const painScaleImageSrc = new URL("../assets/Prescription_bottom.png", import.meta.url).href;
 const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const HISTORY_ITEMS = [
@@ -33,6 +23,14 @@ const COLORS = {
   accent: [171, 136, 95],
   watermark: [230, 220, 210],
 };
+const imageDataUrlCache = new Map();
+let jsPdfPromise;
+let appointmentAssetsPromise;
+
+function getJsPDF() {
+  jsPdfPromise ??= import("jspdf").then((module) => module.jsPDF);
+  return jsPdfPromise;
+}
 
 function hasValue(value) {
   return value !== undefined && value !== null && String(value).trim() !== "";
@@ -135,8 +133,19 @@ async function loadImageDataUrl(src, options = {}) {
     return null;
   }
 
-  return new Promise((resolve) => {
+  const cacheKey = JSON.stringify({
+    src,
+    alpha: options.alpha ?? 1,
+    crop: options.crop ?? null,
+  });
+
+  if (imageDataUrlCache.has(cacheKey)) {
+    return imageDataUrlCache.get(cacheKey);
+  }
+
+  const imagePromise = new Promise((resolve) => {
     const image = new Image();
+    image.decoding = "async";
 
     image.onload = () => {
       const canvas = document.createElement("canvas");
@@ -165,6 +174,23 @@ async function loadImageDataUrl(src, options = {}) {
     image.onerror = () => resolve(null);
     image.src = src;
   });
+
+  imageDataUrlCache.set(cacheKey, imagePromise);
+  return imagePromise;
+}
+
+async function getAppointmentAssets() {
+  appointmentAssetsPromise ??= Promise.all([
+    loadImageDataUrl(logoImageSrc),
+    loadImageDataUrl(logoImageSrc, { alpha: 0.11 }),
+    loadImageDataUrl(painScaleImageSrc),
+  ]).then(([headerLogo, watermarkLogo, painScaleImage]) => ({
+    headerLogo,
+    watermarkLogo,
+    painScaleImage,
+  }));
+
+  return appointmentAssetsPromise;
 }
 
 function drawParallelCorner(doc, corner) {
@@ -497,17 +523,14 @@ function drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, wa
 }
 
 export async function generateAppointmentPDF(formData) {
+  const jsPDF = await getJsPDF();
   const doc = new jsPDF("p", "mm", "a4");
   const doctor = getDoctorByName(formData.doctorName);
   const patientName = getPatientName(formData);
   const age = calculateAge(formData.dateOfBirth);
   const ageSex = [age, formData.gender].filter(Boolean).join(" / ");
 
-  const [headerLogo, watermarkLogo, painScaleImage] = await Promise.all([
-    loadImageDataUrl(logoImageSrc),
-    loadImageDataUrl(logoImageSrc, { alpha: 0.11 }),
-    loadImageDataUrl(painScaleImageSrc),
-  ]);
+  const { headerLogo, watermarkLogo, painScaleImage } = await getAppointmentAssets();
 
   drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo, painScaleImage);
   doc.save(getFileName(formData.firstName, formData.lastName));

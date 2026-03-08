@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { doctorNames } from "../data/doctors";
-import { generateAppointmentPDF } from "../utils/generateAppointmentPDF";
 import {
   createInitialAppointmentFormData,
   HISTORY_OPTIONS,
@@ -62,6 +61,7 @@ function OptionalSection({ title, description, children }) {
 
 export default function AppointmentBookingForm({ title = "Book An Appointment" }) {
   const [formData, setFormData] = useState(() => createInitialAppointmentFormData(doctorNames));
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -84,10 +84,14 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
   const handleGeneratePdf = async () => {
     try {
+      setIsGeneratingPdf(true);
+      const { generateAppointmentPDF } = await import("../utils/generateAppointmentPDF");
       await generateAppointmentPDF(formData);
     } catch (error) {
       console.error(error);
       window.alert(error instanceof Error ? error.message : "Unable to generate the appointment PDF.");
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -311,9 +315,10 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
       <button
         onClick={handleGeneratePdf}
-        className="w-full rounded-xl bg-blue-900 px-5 py-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        disabled={isGeneratingPdf}
+        className="w-full rounded-xl bg-blue-900 px-5 py-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-wait disabled:bg-blue-700"
       >
-        Generate PDF and Download
+        {isGeneratingPdf ? "Preparing PDF..." : "Generate PDF and Download"}
       </button>
     </div>
   );

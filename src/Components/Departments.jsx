@@ -9,13 +9,12 @@ import {
 } from "react-icons/fa";
 import StatsSection from "./StatsSection";
 import doctorsImage from "../assets/doctors.jpg";
-import neurologyPhoto from "../assets/neurology-photo.jpg";
 
 const departments = [
   {
     title: "Pharmacy",
     icon: FaPills,
-    image: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88",
+    image: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=1200&q=80",
     description: "High quality pharmacy services and medicine support.",
   },
   {
@@ -27,19 +26,19 @@ const departments = [
   {
     title: "DNA Lab",
     icon: FaDna,
-    image: "https://images.unsplash.com/photo-1579154204601-01588f351e67",
+    image: "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=80",
     description: "Advanced DNA and genetic testing facilities.",
   },
   {
     title: "Neurology",
     icon: FaBrain,
-    image: neurologyPhoto,
+    image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=1200&q=80",
     description: "Expert brain and nervous system treatments.",
   },
   {
     title: "Cardiology",
     icon: FaHeart,
-    image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56",
+    image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=1200&q=80",
     description: "Complete heart care and emergency cardiology services.",
   },
 ];
@@ -108,6 +107,9 @@ const Departments = () => {
             <img
               src={activeDept.image}
               alt={activeDept.title}
+              decoding="async"
+              loading="lazy"
+              sizes="(min-width: 768px) 50vw, 100vw"
               onError={(event) => {
                 event.currentTarget.src = doctorsImage;
               }}
