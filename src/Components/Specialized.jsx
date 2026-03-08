@@ -1,7 +1,6 @@
 import { Activity, Ambulance, Hospital, UserRound } from "lucide-react";
 import Departments from "./Departments";
 
-
 export function Specialization() {
     const services = [
         {
@@ -26,44 +25,34 @@ export function Specialization() {
         },
     ];
 
-
     return (
-        <div>
-            <section className="bg-gray-100 py-20 font-[Poppins]">
-                <div className="max-w-7xl mx-auto px-6 text-center">
-                    <p className="text-lg text-gray-600 mb-2">
-                        We Offer Specialized
-                    </p>
+        <div className="overflow-x-hidden">
+            <section className="bg-gray-100 py-16 font-[Poppins] sm:py-20">
+                <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
+                    <p className="mb-2 text-base text-gray-600 sm:text-lg">We Offer Specialized</p>
 
-
-                    <h2 className="text-3xl md:text-4xl font-bold mb-14">
+                    <h2 className="mb-10 text-2xl font-bold sm:mb-14 sm:text-3xl md:text-4xl">
                         Orthopedics To Meet Your Needs
                     </h2>
 
-
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {services.map((item, index) => (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8">
+                        {services.map((item) => (
                             <div
-                                key={index}
-                                className="bg-white p-8 text-left rounded-xl shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition duration-300 group"
+                                key={item.title}
+                                className="group rounded-xl bg-white p-6 text-left shadow-sm transition duration-300 hover:-translate-y-2 hover:shadow-xl sm:p-8"
                             >
-                                <div className="mb-6 group-hover:scale-110 transition duration-300">
+                                <div className="mb-6 transition duration-300 group-hover:scale-110">
                                     {item.icon}
                                 </div>
 
-
-                                <h3 className="text-lg font-semibold mb-3 group-hover:text-blue-600 transition">
+                                <h3 className="mb-3 text-lg font-semibold transition group-hover:text-blue-600">
                                     {item.title}
                                 </h3>
 
+                                <p className="mb-4 text-sm leading-relaxed text-gray-600">{item.desc}</p>
 
-                                <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                                    {item.desc}
-                                </p>
-
-
-                                <button className="font-semibold text-black group-hover:text-blue-600 transition">
-                                    Read More »
+                                <button className="font-semibold text-black transition group-hover:text-blue-600">
+                                    Read More
                                 </button>
                             </div>
                         ))}
@@ -71,7 +60,7 @@ export function Specialization() {
                 </div>
             </section>
 
-            <Departments/>
+            <Departments />
         </div>
     );
 }

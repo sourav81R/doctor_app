@@ -16,7 +16,7 @@ const toggleFAQ = (index) => {
     <>
       {/* ================= SECTION 1 : HERO ================= */}
       <section
-        className="pt-30 relative w-full min-h-[70vh] flex items-center bg-cover bg-center"
+        className="relative flex min-h-[70vh] w-full items-center overflow-hidden bg-cover bg-center pt-24 sm:pt-30"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1580281657521-6c8f9c9c8f7f')",
@@ -24,7 +24,7 @@ const toggleFAQ = (index) => {
       >
         <div className="absolute inset-0 bg-blue-900/70"></div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 w-full">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-16 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div className="text-white">
               <h1 className="text-3xl md:text-5xl font-bold leading-tight">
@@ -68,8 +68,8 @@ const toggleFAQ = (index) => {
       </section>
 
       {/* ================= SECTION 2 ================= */}
-      <section className="bg-white py-20 relative">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      <section className="relative overflow-hidden bg-white py-20">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 sm:px-6 md:grid-cols-2">
           <div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
               Caring For The Health <br />
@@ -89,7 +89,7 @@ const toggleFAQ = (index) => {
               We treat all enquiries in confidence.
             </p>
 
-            <div className="mt-8 flex items-center gap-6">
+            <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
                 to="/doctors"
                 className="px-6 py-3 bg-sky-500 text-white font-semibold rounded-md hover:bg-sky-600 transition"
@@ -105,7 +105,7 @@ const toggleFAQ = (index) => {
           </div>
 
           {/* Image with YouTube Button */}
-          <div className="relative w-full h-full">
+          <div className="relative w-full overflow-hidden rounded-xl">
             <img
               src="https://images.unsplash.com/photo-1550831107-1553da8c8464"
               alt="Doctor"
@@ -131,7 +131,7 @@ const toggleFAQ = (index) => {
       </section>
 
       {/* ================= SECTION 3 : OVERLAP ================= */}
-      <section className="relative bg-sky-500 text-white py-24">
+      <section className="relative overflow-hidden bg-sky-500 py-24 text-white">
         {/* Overlapping Image */}
         <div className="absolute -top-20 left-6 md:left-24 hidden md:block">
           <img
@@ -141,7 +141,7 @@ const toggleFAQ = (index) => {
           />
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 sm:px-6 md:grid-cols-2">
           <h2 className="text-3xl md:text-4xl font-bold leading-tight">
             Sets The Standard For <br />
             High Quality Care And <br />
@@ -183,7 +183,7 @@ const toggleFAQ = (index) => {
 
       {/* ================= SECTION 4 : CORE FEATURES ================= */}
       <section className="relative bg-sky-600 py-24 text-white">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
 
           {/* Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -383,12 +383,11 @@ const toggleFAQ = (index) => {
 </section>
 
 
-<div className="mt-6">
+<div className="mx-auto mt-6 max-w-7xl px-4 sm:px-6">
   <button
     type="button"
     onClick={() => alert("Thank you for your support!")}
     className="
-      ml-6
       inline-flex items-center gap-3
       bg-sky-500
       text-white

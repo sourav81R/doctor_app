@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { Menu, X, ShoppingCart, Search } from "lucide-react";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import HeroSection from "../Components/Herosection";
 
 export default function MedicalNavbar() {
     const [open, setOpen] = useState(false);
@@ -14,33 +13,33 @@ export default function MedicalNavbar() {
     ];
 
     return (
-        <div>
+        <div className="overflow-x-hidden">
+            <div className="fixed left-0 top-0 z-50 w-full shadow-md">
+                <div className="hidden items-center justify-between gap-4 bg-gray-100 px-6 py-4 lg:flex">
+                    <h1 className="text-4xl font-bold text-blue-600">MUKTI</h1>
 
-            <div className="w-full shadow-md fixed top-0 left-0 z-50">
-                {/* Top Header */}
-                <div className="bg-gray-100 px-6 py-4 hidden md:flex justify-between items-center">
-                    <h1 className="text-blue-600 font-bold text-4xl">MUKTI</h1>
-
-                    <div className="flex gap-8">
-                        <p>📞 +880123456789</p>
-                        <p>✉️ mukti@gmail.com</p>
-                        <p>📍 New York 100</p>
+                    <div className="flex flex-wrap items-center justify-end gap-4 text-sm xl:gap-8">
+                        <p>+880123456789</p>
+                        <p>mukti@gmail.com</p>
+                        <p>New York 100</p>
                     </div>
                 </div>
 
-                {/* Navbar */}
                 <nav className="bg-gradient-to-r from-blue-900 to-blue-600 text-white">
-                    <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+                    <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
+                        <NavLink to="/" className="text-2xl font-bold tracking-wide lg:hidden">
+                            MUKTI
+                        </NavLink>
 
-                        {/* Desktop Menu */}
-                        <ul className="hidden lg:flex gap-8 font-medium">
-                            {menuItems.map((item, index) => (
+                        <ul className="hidden gap-8 font-medium lg:flex">
+                            {menuItems.map((item) => (
                                 <NavLink
-                                    key={index}
+                                    key={item.path}
                                     to={item.path}
                                     className={({ isActive }) =>
-                                        `transition duration-300 transform hover:scale-110 
-              ${isActive ? "text-yellow-300" : "hover:text-yellow-300"}`
+                                        `transition duration-300 hover:text-yellow-300 ${
+                                            isActive ? "text-yellow-300" : ""
+                                        }`
                                     }
                                 >
                                     {item.name}
@@ -48,63 +47,70 @@ export default function MedicalNavbar() {
                             ))}
                         </ul>
 
-                        {/* Right Icons */}
                         <div className="hidden lg:flex items-center gap-4">
-                            <div className="flex items-center bg-blue-400 rounded-full px-4 py-1">
-
-                                <NavLink to={"/contact"}>Make Appoitnment -</NavLink>
-                            </div>
-
-
-                        </div>
-
-                        {/* Mobile Hamburger */}
-                        <div className="lg:hidden">
-                            {open ? (
-                                <X size={32} onClick={() => setOpen(false)} />
-                            ) : (
-                                <Menu size={32} onClick={() => setOpen(true)} />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Mobile Sidebar */}
-                    <div
-                        className={`fixed top-0 right-0 h-full w-72 bg-blue-700 z-50 transform transition-transform duration-500 ${open ? "translate-x-0" : "translate-x-full"
-                            }`}
-                    >
-                        <div className="flex justify-end p-6">
-                            <X size={32} onClick={() => setOpen(false)} />
-                        </div>
-
-                        <ul className="flex flex-col items-center gap-8 mt-10 text-lg">
-                            {menuItems.map((item, index) => (
-                                <NavLink
-                                    key={index}
-                                    to={item.path}
-                                    onClick={() => setOpen(false)}
-                                    className={({ isActive }) =>
-                                        `${isActive ? "text-yellow-300" : ""}`
-                                    }
-                                >
-                                    {item.name}
-                                </NavLink>
-                            ))}
-                        </ul>
-
-                        {/* Mobile Button */}
-                        <div className="mt-10 flex justify-center">
                             <NavLink
                                 to="/contact"
-                                onClick={() => setOpen(false)}
-                                className="bg-gradient-to-r from-cyan-400 to-blue-500 px-6 py-3 rounded-full font-semibold shadow-md hover:scale-110 hover:shadow-xl transition duration-300"
+                                className="rounded-full bg-blue-400 px-4 py-2 text-sm font-medium transition hover:bg-blue-300"
                             >
-                                Make Appointment →
+                                Make Appointment
                             </NavLink>
                         </div>
 
+                        <button
+                            type="button"
+                            className="lg:hidden"
+                            onClick={() => setOpen((current) => !current)}
+                            aria-label="Toggle navigation menu"
+                        >
+                            {open ? <X size={30} /> : <Menu size={30} />}
+                        </button>
+                    </div>
 
+                    <div
+                        className={`fixed inset-0 bg-black/40 transition-opacity duration-300 lg:hidden ${
+                            open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+                        }`}
+                        onClick={() => setOpen(false)}
+                    />
 
+                    <div
+                        className={`fixed right-0 top-0 z-50 h-full w-[85vw] max-w-[320px] bg-blue-700 px-6 py-8 transition-transform duration-500 lg:hidden ${
+                            open ? "translate-x-0" : "translate-x-full"
+                        }`}
+                    >
+                        <div className="mb-10 flex items-center justify-between">
+                            <span className="text-xl font-bold tracking-wide">MUKTI</span>
+                            <button
+                                type="button"
+                                onClick={() => setOpen(false)}
+                                aria-label="Close navigation menu"
+                            >
+                                <X size={30} />
+                            </button>
+                        </div>
+
+                        <ul className="flex flex-col gap-6 text-lg">
+                            {menuItems.map((item) => (
+                                <NavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    onClick={() => setOpen(false)}
+                                    className={({ isActive }) =>
+                                        `transition ${isActive ? "text-yellow-300" : ""}`
+                                    }
+                                >
+                                    {item.name}
+                                </NavLink>
+                            ))}
+                        </ul>
+
+                        <NavLink
+                            to="/contact"
+                            onClick={() => setOpen(false)}
+                            className="mt-10 inline-flex rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 px-6 py-3 text-center font-semibold shadow-md transition hover:scale-105"
+                        >
+                            Make Appointment
+                        </NavLink>
                     </div>
                 </nav>
             </div>

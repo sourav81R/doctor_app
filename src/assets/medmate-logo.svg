@@ -1,0 +1,28 @@
+<svg width="900" height="320" viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wave" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8d5318"/>
+      <stop offset="100%" stop-color="#c58f62"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#wave)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M65 210C130 185 145 95 245 86C345 78 370 164 478 164"/>
+    <path d="M40 250C135 238 155 108 255 108C350 108 382 188 510 188"/>
+  </g>
+  <g fill="none" stroke="#b88967" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M274 176C237 163 222 120 242 86C265 47 320 39 359 62"/>
+    <path d="M324 212C390 224 447 205 500 155C562 95 652 82 744 111"/>
+    <path d="M318 239C394 250 459 233 523 182C592 127 667 111 748 132"/>
+  </g>
+  <text x="275" y="151" fill="#a25a3b" font-size="134" font-family="Times New Roman, serif" font-style="italic">Dr.</text>
+  <circle cx="462" cy="159" r="11" fill="#ad3a2e"/>
+  <text x="500" y="152" fill="#efc47a" font-size="98" font-family="Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif" letter-spacing="4">MEDMATE</text>
+  <text x="505" y="232" fill="#d7b391" font-size="64" font-family="Trebuchet MS, Verdana, sans-serif" letter-spacing="2">Complete Care</text>
+  <g fill="none" stroke="#c10000" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M741 70C762 68 788 56 810 33C832 58 855 70 881 72"/>
+    <path d="M808 31V176"/>
+    <path d="M778 113H838"/>
+    <path d="M787 86C803 96 809 105 809 123C809 140 800 149 788 158"/>
+    <path d="M829 86C813 96 807 105 807 123C807 140 816 149 828 158"/>
+  </g>
+</svg>

@@ -7,19 +7,25 @@ export default function Admin() {
     const [data, setData] = useState([]);
     const [myfilter, setmyfilter] = useState([])
 
-    async function getdata() {
-        const res = await axios.get("https://jsonplaceholder.typicode.com/users")
-        setData(res.data)
-        setmyfilter(res.data)
-    }
-
-    // API CALL
     useEffect(() => {
-        getdata()
-        // axios.get("https://jsonplaceholder.typicode.com/users")
-        //     .then((res) => setData(res.data))
-        //     .then((res) => setmyfilter(res.data))
-        //     .catch((err) => console.log(err));
+        let ignore = false;
+
+        const loadData = async () => {
+            const res = await axios.get("https://jsonplaceholder.typicode.com/users");
+
+            if (ignore) {
+                return;
+            }
+
+            setData(res.data);
+            setmyfilter(res.data);
+        };
+
+        loadData().catch((err) => console.log(err));
+
+        return () => {
+            ignore = true;
+        };
     }, []);
 
     const handelchnage = (value) => {

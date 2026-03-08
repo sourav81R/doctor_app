@@ -12,7 +12,7 @@ import AppointmentForm from './Pages/AppointmentForm'
 
 function App() {
   return (
-    <div>
+    <div className="min-h-screen overflow-x-hidden">
       <BrowserRouter>
       <MedicalNavbar/>
        <Routes>

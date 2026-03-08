@@ -6,7 +6,11 @@ function ErrorPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        setShow(true);
+        const timer = window.setTimeout(() => {
+            setShow(true);
+        }, 0);
+
+        return () => window.clearTimeout(timer);
     }, []);
     return (
         <div>
