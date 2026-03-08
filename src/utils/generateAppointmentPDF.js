@@ -1,6 +1,12 @@
 import { jsPDF } from "jspdf";
 import { getDoctorByName } from "../data/doctors";
 
+const logoModules = import.meta.glob("../assets/Doctor(1).jpeg", {
+  eager: true,
+  import: "default",
+});
+
+const logoImageSrc = Object.values(logoModules)[0] ?? null;
 const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const HISTORY_ITEMS = [
@@ -80,6 +86,34 @@ function getFileName(firstName, lastName) {
 
 function hasValue(value) {
   return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
+async function loadImageDataUrl(src) {
+  if (!src) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        resolve(null);
+        return;
+      }
+
+      context.drawImage(image, 0, 0);
+      resolve(canvas.toDataURL("image/jpeg", 0.95));
+    };
+
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
 }
 
 function drawParallelCorner(doc, corner) {
@@ -171,7 +205,7 @@ function drawWatermark(doc) {
   doc.text("Complete Care", 82, 211, { angle: 48 });
 }
 
-function drawHeader(doc, doctor) {
+function drawHeader(doc, doctor, logoImage) {
   drawParallelCorner(doc, "top-left");
 
   doc.setTextColor(...COLORS.ink);
@@ -201,26 +235,33 @@ function drawHeader(doc, doctor) {
   doc.setFont("courier", "bold");
   doc.text(`Reg. No. ${doctor.regNo || ""}`, 48, currentY, { align: "center" });
 
-  doc.setTextColor(...COLORS.brand);
-  doc.setFont("times", "italic");
-  doc.setFontSize(32);
-  doc.text("Dr.", 132, 16);
+  if (logoImage) {
+    doc.addImage(logoImage, "JPEG", 124, 4, 66, 22);
+  } else {
+    doc.setTextColor(...COLORS.brand);
+    doc.setFont("times", "italic");
+    doc.setFontSize(32);
+    doc.text("Dr.", 132, 16);
+
+    doc.setTextColor(...COLORS.ink);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("MEDMATE", 166, 17, { align: "center" });
+
+    doc.setTextColor(...COLORS.brand);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.text(doctor.clinic || "Complete Care", 166, 23, { align: "center" });
+  }
 
   doc.setTextColor(...COLORS.ink);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("MEDMATE", 166, 17, { align: "center" });
+  doc.setFont("times", "bold");
+  doc.setFontSize(10.5);
+  doc.text(doctor.phone || "", 168, 31, { align: "center" });
 
-  doc.setTextColor(...COLORS.brand);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.text(doctor.clinic || "Complete Care", 166, 23, { align: "center" });
-
-  doc.setTextColor(...COLORS.ink);
-  doc.setFont("courier", "bold");
-  doc.setFontSize(9.5);
-  doc.text(doctor.phone || "", 194, 30, { align: "right" });
-  doc.text(doctor.email || "", 194, 36, { align: "right" });
+  doc.setFont("times", "normal");
+  doc.setFontSize(10);
+  doc.text(doctor.email || "", 168, 37, { align: "center" });
 
   drawDottedLine(doc, 10, 43, 195);
 }
@@ -334,11 +375,11 @@ function drawPrescriptionBody(doc, formData) {
   }
 }
 
-function drawTemplate(doc, doctor, formData, patientName, ageSex) {
+function drawTemplate(doc, doctor, formData, patientName, ageSex, logoImage) {
   doc.setFillColor(...COLORS.page);
   doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
 
-  drawHeader(doc, doctor);
+  drawHeader(doc, doctor, logoImage);
   drawPatientDetails(doc, formData, patientName, ageSex);
   drawHistorySection(doc, formData);
   drawMaternalBox(doc, formData);
@@ -352,7 +393,8 @@ export async function generateAppointmentPDF(formData) {
   const patientName = getPatientName(formData);
   const age = calculateAge(formData.dateOfBirth);
   const ageSex = [age, formData.gender].filter(Boolean).join(" / ");
+  const logoImage = await loadImageDataUrl(logoImageSrc);
 
-  drawTemplate(doc, doctor, formData, patientName, ageSex);
+  drawTemplate(doc, doctor, formData, patientName, ageSex, logoImage);
   doc.save(getFileName(formData.firstName, formData.lastName));
 }
