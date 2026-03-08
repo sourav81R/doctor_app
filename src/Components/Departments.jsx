@@ -8,6 +8,8 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import StatsSection from "./StatsSection";
+import doctorsImage from "../assets/doctors.jpg";
+import neurologyPhoto from "../assets/neurology-photo.jpg";
 
 const departments = [
   {
@@ -19,7 +21,7 @@ const departments = [
   {
     title: "Nursing",
     icon: FaUserNurse,
-    image: "https://images.unsplash.com/photo-1584516150909-c43483ee7939",
+    image: doctorsImage,
     description: "Professional nursing staff with 24/7 patient support.",
   },
   {
@@ -31,7 +33,7 @@ const departments = [
   {
     title: "Neurology",
     icon: FaBrain,
-    image: "https://images.unsplash.com/photo-1559757175-7f0bb3c9e3f0",
+    image: neurologyPhoto,
     description: "Expert brain and nervous system treatments.",
   },
   {
@@ -106,6 +108,9 @@ const Departments = () => {
             <img
               src={activeDept.image}
               alt={activeDept.title}
+              onError={(event) => {
+                event.currentTarget.src = doctorsImage;
+              }}
               className="h-full max-h-[320px] w-full object-cover transition-transform duration-500 hover:scale-110"
             />
           </div>
