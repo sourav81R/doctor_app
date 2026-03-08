@@ -185,11 +185,11 @@ function drawFieldLine(doc, label, value, x, y, width, options = {}) {
   const {
     align = "left",
     fontSize = 8.6,
-    lineYOffset = 0.7,
-    valueOffset = 0.7,
+    lineYOffset = 1.1,
+    valueOffset = -0.1,
     gap = 3.2,
     inputPadding = 0.8,
-    eraseLineUnderValue = true,
+    eraseLineUnderValue = false,
   } = options;
 
   doc.setFont("courier", "bold");
