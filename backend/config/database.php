@@ -95,6 +95,9 @@ function ensure_mysql_tables(PDO $pdo): void
             doctor VARCHAR(150) NOT NULL,
             appointment_date DATE NOT NULL,
             appointment_time TIME NULL,
+            consultation_type ENUM('clinic', 'teleconsultation') NOT NULL DEFAULT 'clinic',
+            consultation_platform VARCHAR(60) DEFAULT '',
+            consultation_message TEXT NULL,
             blood_pressure VARCHAR(50) DEFAULT '',
             temperature VARCHAR(50) DEFAULT '',
             pulse VARCHAR(50) DEFAULT '',
@@ -111,11 +114,45 @@ function ensure_mysql_tables(PDO $pdo): void
         SQL
     );
 
+    $pdo->exec(
+        <<<SQL
+        CREATE TABLE IF NOT EXISTS prescriptions (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            doctor_name VARCHAR(150) NOT NULL,
+            patient_name VARCHAR(150) NOT NULL,
+            age VARCHAR(20) DEFAULT '',
+            gender VARCHAR(20) DEFAULT '',
+            diagnosis TEXT NULL,
+            medicines JSON NOT NULL,
+            notes TEXT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        SQL
+    );
+
     ensure_mysql_column(
         $pdo,
         'appointments',
         'form_snapshot',
         'ALTER TABLE appointments ADD COLUMN form_snapshot JSON NULL AFTER maternal_history'
+    );
+    ensure_mysql_column(
+        $pdo,
+        'appointments',
+        'consultation_type',
+        "ALTER TABLE appointments ADD COLUMN consultation_type ENUM('clinic','teleconsultation') NOT NULL DEFAULT 'clinic' AFTER appointment_time"
+    );
+    ensure_mysql_column(
+        $pdo,
+        'appointments',
+        'consultation_platform',
+        "ALTER TABLE appointments ADD COLUMN consultation_platform VARCHAR(60) DEFAULT '' AFTER consultation_type"
+    );
+    ensure_mysql_column(
+        $pdo,
+        'appointments',
+        'consultation_message',
+        'ALTER TABLE appointments ADD COLUMN consultation_message TEXT NULL AFTER consultation_platform'
     );
 
     $initialized = true;

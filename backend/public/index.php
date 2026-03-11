@@ -27,9 +27,11 @@ require_once dirname(__DIR__) . '/config/database.php';
 require_once dirname(__DIR__) . '/utils/jwt.php';
 require_once dirname(__DIR__) . '/models/Admin.php';
 require_once dirname(__DIR__) . '/models/Appointment.php';
+require_once dirname(__DIR__) . '/models/Prescription.php';
 require_once dirname(__DIR__) . '/middleware/auth.php';
 require_once dirname(__DIR__) . '/controllers/AuthController.php';
 require_once dirname(__DIR__) . '/controllers/AppointmentController.php';
+require_once dirname(__DIR__) . '/controllers/PrescriptionController.php';
 require_once dirname(__DIR__) . '/routes/api.php';
 
 dispatch_api_request();

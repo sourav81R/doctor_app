@@ -51,5 +51,13 @@ function dispatch_api_request(): void
         }
     }
 
+    if (($segments[0] ?? '') === 'prescriptions') {
+        require_admin_auth();
+
+        if ($method === 'POST' && ($segments[1] ?? '') === 'save') {
+            PrescriptionController::create();
+        }
+    }
+
     error_response('Route not found.', 404);
 }

@@ -12,6 +12,7 @@ const AppointmentFormPage = lazy(() => import("./Pages/AppointmentForm"));
 const ErrorPage = lazy(() => import("./Pages/ErrorPage"));
 const AdminLoginPage = lazy(() => import("./Pages/AdminLogin"));
 const AdminDashboardPage = lazy(() => import("./Pages/AdminDashboard"));
+const PrescriptionGeneratorPage = lazy(() => import("./Pages/PrescriptionGenerator"));
 
 function RouteFallback() {
   return (
@@ -40,9 +41,11 @@ function App() {
             <Route path="/abc" element={<AppointmentFormPage />} />
             <Route path="/admin" element={<AdminEntryRedirect />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/prescription" element={<Navigate to="/admin/prescription" replace />} />
             <Route path="/myadmin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin/prescription" element={<PrescriptionGeneratorPage />} />
             </Route>
             <Route path="*" element={<ErrorPage />} />
           </Routes>

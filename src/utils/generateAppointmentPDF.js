@@ -1,4 +1,4 @@
-import { getDoctorByName } from "../data/doctors";
+import { getDoctorProfile } from "../data/doctors";
 
 const logoImageSrc = new URL("../assets/Prescription_logo.png", import.meta.url).href;
 const painScaleImageSrc = new URL("../assets/Prescription_bottom.png", import.meta.url).href;
@@ -101,6 +101,16 @@ function getFileName(firstName, lastName) {
     .replace(/\s+/g, "_");
 
   return `appointment_${slug || "patient"}.pdf`;
+}
+
+function getPrescriptionFileName(patientName) {
+  const slug = String(patientName ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "_");
+
+  return `prescription_${slug || "patient"}.pdf`;
 }
 
 function fitTextToWidth(doc, text, maxWidth, font = "courier", style = "bold", startSize = 12, minSize = 7) {
@@ -510,11 +520,34 @@ function drawSupplementalDetails(doc, formData) {
     }) + 4;
   }
 
+  doc.setFont("courier", "bold");
+  doc.setFontSize(8.6);
+  doc.text("Mode:", 68, 197);
+  doc.text(
+    formData.consultationType === "teleconsultation" ? "Teleconsultation" : "Clinic Visit",
+    68,
+    202,
+  );
+
+  if (hasValue(formData.consultationPlatform)) {
+    doc.text("Platform:", 68, 210);
+    doc.text(String(formData.consultationPlatform), 68, 215);
+  }
+
+  if (hasValue(formData.consultationMessage)) {
+    doc.text("Pre-consultation:", 118, 197);
+    drawWrappedValue(doc, formData.consultationMessage, 118, 202, 74, {
+      fontSize: 8,
+      maxLines: 4,
+      lineHeight: 3.8,
+    });
+  }
+
   if (hasValue(formData.message)) {
     doc.setFont("courier", "bold");
     doc.setFontSize(8.6);
-    doc.text("Notes:", 68, 170);
-    drawWrappedValue(doc, formData.message, 68, 175, 76, {
+    doc.text("Notes:", 68, 227);
+    drawWrappedValue(doc, formData.message, 68, 232, 76, {
       fontSize: 8,
       maxLines: 6,
       lineHeight: 3.8,
@@ -538,7 +571,7 @@ function drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, wa
 export async function generateAppointmentPDF(formData) {
   const jsPDF = await getJsPDF();
   const doc = new jsPDF("p", "mm", "a4");
-  const doctor = getDoctorByName(formData.doctorName);
+  const doctor = getDoctorProfile(formData.doctorName);
   const patientName = getPatientName(formData);
   const age = getAgeValue(formData);
   const ageSex = [age, formData.gender].filter(Boolean).join(" / ");
@@ -547,4 +580,139 @@ export async function generateAppointmentPDF(formData) {
 
   drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo, painScaleImage);
   doc.save(getFileName(formData.firstName, formData.lastName));
+}
+
+function drawPrescriptionHeader(doc, doctor, headerLogo) {
+  doc.setFillColor(...COLORS.page);
+  doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
+
+  drawHeader(doc, doctor, headerLogo);
+  drawParallelCorner(doc, "bottom-right");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(...COLORS.ink);
+  doc.text("Medical Prescription", 105, 56, { align: "center" });
+
+  doc.setDrawColor(...COLORS.accent);
+  doc.setLineWidth(0.55);
+  doc.line(15, 60, 195, 60);
+}
+
+function formatPrescriptionDate(value) {
+  const formatted = formatDate(value);
+  return formatted || formatDate(new Date());
+}
+
+function drawPrescriptionPatientInfo(doc, data) {
+  doc.setFont("courier", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...COLORS.ink);
+
+  drawFieldLine(doc, "Date", formatPrescriptionDate(data.date), 12, 74, 65, {
+    gap: 3.5,
+    fontSize: 9.2,
+  });
+  drawFieldLine(doc, "Patient", data.patientName, 80, 74, 195, {
+    gap: 3.5,
+    fontSize: 9.2,
+  });
+  drawFieldLine(doc, "Age", data.age, 12, 86, 65, {
+    gap: 3.5,
+    fontSize: 9.2,
+  });
+  drawFieldLine(doc, "Gender", data.gender, 80, 86, 130, {
+    gap: 3.5,
+    fontSize: 9.2,
+  });
+  drawFieldLine(doc, "Diagnosis", data.diagnosis, 12, 98, 195, {
+    gap: 3.5,
+    fontSize: 9.2,
+  });
+}
+
+function drawPrescriptionMedicineTable(doc, medicines) {
+  let currentY = 114;
+
+  doc.setFillColor(231, 245, 255);
+  doc.roundedRect(12, currentY, 186, 12, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.2);
+  doc.setTextColor(...COLORS.ink);
+  doc.text("Medicine", 16, currentY + 7.5);
+  doc.text("Morning", 105, currentY + 7.5, { align: "center" });
+  doc.text("Afternoon", 132, currentY + 7.5, { align: "center" });
+  doc.text("Night", 158, currentY + 7.5, { align: "center" });
+  doc.text("Duration", 186, currentY + 7.5, { align: "center" });
+
+  currentY += 18;
+
+  medicines.forEach((medicine, index) => {
+    const rowHeight = 13;
+
+    doc.setDrawColor(220, 226, 235);
+    doc.setFillColor(index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 249, index % 2 === 0 ? 255 : 252);
+    doc.roundedRect(12, currentY - 7.5, 186, rowHeight, 3, 3, "FD");
+
+    doc.setFont("courier", "bold");
+    doc.setFontSize(8.8);
+    doc.text(truncateTextToWidth(doc, medicine.name, 78), 16, currentY);
+    doc.text(String(medicine.morning || "-"), 105, currentY, { align: "center" });
+    doc.text(String(medicine.afternoon || "-"), 132, currentY, { align: "center" });
+    doc.text(String(medicine.night || "-"), 158, currentY, { align: "center" });
+    doc.text(String(medicine.duration || "-"), 186, currentY, { align: "center" });
+
+    currentY += 15;
+  });
+
+  return currentY;
+}
+
+function drawPrescriptionNotes(doc, notes, startY) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Notes", 12, startY);
+
+  doc.setDrawColor(220, 226, 235);
+  doc.roundedRect(12, startY + 4, 186, 42, 5, 5);
+
+  drawWrappedValue(doc, notes || "No additional notes.", 16, startY + 12, 176, {
+    fontSize: 8.8,
+    maxLines: 7,
+    lineHeight: 4.5,
+  });
+}
+
+function drawPrescriptionSignature(doc, doctor, startY) {
+  doc.setDrawColor(...COLORS.ink);
+  doc.setLineWidth(0.35);
+  doc.line(138, startY, 192, startY);
+
+  doc.setFont("courier", "bold");
+  doc.setFontSize(9);
+  doc.text("Doctor Signature", 165, startY + 6, { align: "center" });
+
+  if (hasValue(doctor.name)) {
+    doc.text(String(doctor.name), 165, startY + 12, { align: "center" });
+  }
+}
+
+export async function generatePrescriptionPDF(data) {
+  const jsPDF = await getJsPDF();
+  const doc = new jsPDF("p", "mm", "a4");
+  const doctor = getDoctorProfile(data.doctorName);
+  const medicines = Array.isArray(data.medicines)
+    ? data.medicines.filter(
+        (medicine) => hasValue(medicine?.name) || hasValue(medicine?.duration),
+      )
+    : [];
+  const { headerLogo } = await getAppointmentAssets();
+
+  drawPrescriptionHeader(doc, doctor, headerLogo);
+  drawPrescriptionPatientInfo(doc, data);
+  const nextY = drawPrescriptionMedicineTable(doc, medicines);
+  drawPrescriptionNotes(doc, data.notes, Math.max(nextY + 4, 198));
+  drawPrescriptionSignature(doc, doctor, 270);
+
+  doc.save(getPrescriptionFileName(data.patientName));
 }

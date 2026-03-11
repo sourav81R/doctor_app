@@ -21,10 +21,36 @@ export const doctors = {
 
 export const doctorNames = Object.keys(doctors);
 
-export function getDoctorByName(name) {
-  const doctorName = doctors[name] ? name : doctorNames[0];
+export function getDoctorProfile(name) {
+  const trimmedName = String(name ?? "").trim();
+
+  if (trimmedName && doctors[trimmedName]) {
+    return {
+      name: trimmedName,
+      ...doctors[trimmedName],
+    };
+  }
+
+  if (trimmedName) {
+    return {
+      name: trimmedName,
+      degree: "",
+      specialization: "General Practice",
+      fellowship: "",
+      regNo: "",
+      phone: "",
+      email: "",
+      clinic: "Clinic",
+    };
+  }
+
+  const fallbackDoctor = doctorNames[0];
   return {
-    name: doctorName,
-    ...doctors[doctorName],
+    name: fallbackDoctor,
+    ...doctors[fallbackDoctor],
   };
+}
+
+export function getDoctorByName(name) {
+  return getDoctorProfile(name);
 }

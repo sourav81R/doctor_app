@@ -28,12 +28,24 @@ function HeroSection() {
                             To Life For The Whole Family...
                         </h1>
 
-                        <Link
-                            to="/contact"
-                            className="mt-8 inline-flex w-full justify-center rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-xl transition duration-300 hover:scale-105 hover:bg-blue-700 sm:w-auto sm:px-10"
-                        >
-                            Get Appointments
-                        </Link>
+                        <p className="mt-5 max-w-lg text-base text-gray-700 sm:text-lg">
+                            Choose an in-clinic visit or book a teleconsultation with the same care team.
+                        </p>
+
+                        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                            <Link
+                                to="/abc?type=clinic"
+                                className="inline-flex w-full justify-center rounded-xl bg-blue-700 px-6 py-3 font-semibold text-white shadow-xl transition duration-300 hover:scale-[1.02] hover:bg-blue-800 sm:w-auto sm:px-8"
+                            >
+                                Book Clinic Appointment
+                            </Link>
+                            <Link
+                                to="/abc?type=teleconsultation"
+                                className="inline-flex w-full justify-center rounded-xl border border-cyan-300 bg-cyan-100 px-6 py-3 font-semibold text-cyan-950 shadow-lg transition duration-300 hover:scale-[1.02] hover:bg-cyan-200 sm:w-auto sm:px-8"
+                            >
+                                Book Teleconsultation
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="flex justify-center lg:justify-end">

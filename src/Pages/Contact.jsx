@@ -1,4 +1,5 @@
 import AppointmentBookingForm from "../Components/AppointmentBookingForm";
+import { useSearchParams } from "react-router-dom";
 import Footer from "./Footer";
 
 const contactCards = [
@@ -20,6 +21,10 @@ const contactCards = [
 ];
 
 function Contact() {
+  const [searchParams] = useSearchParams();
+  const initialConsultationType =
+    searchParams.get("type") === "teleconsultation" ? "teleconsultation" : "clinic";
+
   return (
     <>
       <div className="flex h-[280px] w-full items-center justify-center overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100 px-4 pt-24 sm:h-[350px] sm:pt-30">
@@ -78,7 +83,7 @@ function Contact() {
           </div>
 
           <div className="mx-auto w-full max-w-3xl rounded-xl bg-white p-6 shadow-xl sm:p-8 md:p-10">
-            <AppointmentBookingForm />
+            <AppointmentBookingForm initialConsultationType={initialConsultationType} />
           </div>
         </div>
       </section>

@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS appointments (
     doctor VARCHAR(150) NOT NULL,
     appointment_date DATE NOT NULL,
     appointment_time TIME NULL,
+    consultation_type ENUM('clinic','teleconsultation') NOT NULL DEFAULT 'clinic',
+    consultation_platform VARCHAR(60) DEFAULT '',
+    consultation_message TEXT NULL,
     blood_pressure VARCHAR(50) DEFAULT '',
     temperature VARCHAR(50) DEFAULT '',
     pulse VARCHAR(50) DEFAULT '',
@@ -31,4 +34,16 @@ CREATE TABLE IF NOT EXISTS appointments (
     INDEX idx_appointments_date (appointment_date),
     INDEX idx_appointments_doctor (doctor),
     INDEX idx_appointments_patient (patient_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS prescriptions (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    doctor_name VARCHAR(150) NOT NULL,
+    patient_name VARCHAR(150) NOT NULL,
+    age VARCHAR(20) DEFAULT '',
+    gender VARCHAR(20) DEFAULT '',
+    diagnosis TEXT NULL,
+    medicines JSON NOT NULL,
+    notes TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

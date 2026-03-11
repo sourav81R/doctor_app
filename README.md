@@ -1,167 +1,224 @@
-# Doctor Appointment Full Stack App
+# Doctor Appointment App
 
-Clinic appointment system built with a React + Vite frontend and a PHP + MySQL backend. Patients can submit appointments from the website, the backend stores them in MySQL, admins can log in with JWT auth, and the frontend still generates a downloadable appointment PDF after a successful booking.
+Full-stack clinic appointment project with:
 
-## Stack
+- a React 19 + Vite frontend for the public site, appointment form, and admin UI
+- a PHP 8 + MySQL backend for appointment storage and admin authentication
+- client-side PDF generation for printable appointment slips
+
+The codebase combines a marketing-style clinic website with a working booking flow and a protected admin dashboard.
+
+## What The App Does
+
+### Public experience
+
+- Landing page with marketing sections and doctor/department content
+- Contact page with an embedded appointment booking form
+- Standalone appointment form route at `/abc`
+- Appointment submissions support both clinic visits and teleconsultations
+- Teleconsultation bookings capture platform preference and pre-consultation concerns
+- Appointment submissions are sent to the PHP API and stored in MySQL
+- After a successful save, the browser generates and downloads a PDF appointment sheet
+
+### Admin experience
+
+- Admin login with JWT-based authentication
+- Protected dashboard route
+- Protected prescription generator route
+- Appointment listing with:
+  - patient name search
+  - doctor filter
+  - appointment date filter
+  - consultation type filter
+  - pagination
+- Dashboard summary stats:
+  - total appointments
+  - today appointments
+  - distinct doctor count
+- View appointment details
+- Download a PDF again from saved appointment data
+- Delete appointments
+- Generate and save a prescription without creating an appointment first
+
+## Tech Stack
 
 ### Frontend
 
-- `React 19`
-- `Vite 7`
-- `React Router DOM 7`
-- `Tailwind CSS 4`
-- `jsPDF`
+- React 19
+- Vite 7
+- React Router DOM 7
+- Tailwind CSS 4 via `@tailwindcss/vite`
+- `jspdf`
+- `lucide-react`
+- `react-icons`
 
 ### Backend
 
-- `PHP 8+`
-- `MySQL`
-- `PDO`
-- REST API with JSON responses
-- JWT-based admin authentication
+- PHP 8.1+ (`composer.json` requires `^8.1`)
+- MySQL
+- PDO / `pdo_mysql`
+- JSON REST endpoints
+- Custom JWT utilities
+- No required third-party PHP packages beyond Composer metadata
 
-## What Changed
+## Repository Layout
 
-- the patient booking form submits to a real PHP API
-- successful bookings are stored in MySQL
-- the frontend still generates the appointment PDF after the API save succeeds
-- new admin routes were added for login and dashboard access
-- admins can search, filter, page through, view, and delete appointments
-- dashboard stats show total appointments, today's appointments, and doctor count
+```text
+.
+|-- backend/
+|   |-- config/
+|   |-- controllers/
+|   |-- database/
+|   |-- middleware/
+|   |-- models/
+|   |-- public/
+|   |-- routes/
+|   |-- utils/
+|   |-- composer.json
+|   `-- router.php
+|-- public/
+|-- src/
+|   |-- Components/
+|   |-- Pages/
+|   |-- assets/
+|   |-- data/
+|   |-- services/
+|   `-- utils/
+|-- package.json
+|-- vite.config.js
+`-- README.md
+```
 
 ## Frontend Routes
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Marketing/home page |
+| `/` | Home / landing page |
 | `/about` | About page |
 | `/services` | Services page |
-| `/contact` | Contact page with live booking form |
-| `/abc` | Standalone booking form |
-| `/admin` | Smart redirect to login or dashboard |
-| `/admin/login` | Admin login |
+| `/contact` | Contact page with booking form |
+| `/abc` | Standalone appointment form page |
+| `/admin` | Redirects to login or dashboard based on stored token |
+| `/admin/login` | Admin login page |
+| `/prescription` | Redirects to `/admin/prescription` |
 | `/admin/dashboard` | Protected admin dashboard |
+| `/admin/prescription` | Protected prescription generator |
 | `/myadmin` | Redirects to `/admin/dashboard` |
 | `*` | Error page |
 
 ## API Endpoints
 
+Base URL in the frontend defaults to `http://localhost:8000/api`.
+
 | Method | Endpoint | Access | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/api/appointments/create` | Public | Create appointment |
-| `GET` | `/api/appointments` | Admin | List appointments with filters + pagination |
-| `GET` | `/api/appointments/{id}` | Admin | Get one appointment |
-| `DELETE` | `/api/appointments/{id}` | Admin | Delete appointment |
-| `POST` | `/api/admin/login` | Public | Admin login |
-| `POST` | `/api/admin/create` | Public for first admin, protected afterwards | Create admin |
+| `POST` | `/appointments/create` | Public | Create appointment |
+| `GET` | `/appointments` | Admin | List appointments with search, filters, stats, pagination |
+| `GET` | `/appointments/{id}` | Admin | Fetch one appointment |
+| `DELETE` | `/appointments/{id}` | Admin | Delete one appointment |
+| `POST` | `/admin/login` | Public | Admin login |
+| `POST` | `/admin/create` | Public for the first admin, protected afterwards | Create admin |
+| `POST` | `/prescriptions/save` | Admin | Save a direct prescription |
 
-## Backend Structure
+## Data Model
 
-```text
-backend/
-├─ config/
-│  ├─ app.php
-│  ├─ database.php
-│  └─ env.php
-├─ controllers/
-│  ├─ AppointmentController.php
-│  └─ AuthController.php
-├─ database/
-│  └─ schema.sql
-├─ middleware/
-│  └─ auth.php
-├─ models/
-│  ├─ Admin.php
-│  └─ Appointment.php
-├─ public/
-│  ├─ .htaccess
-│  └─ index.php
-├─ routes/
-│  └─ api.php
-├─ utils/
-│  ├─ jwt.php
-│  └─ response.php
-├─ .env.example
-├─ .gitignore
-├─ composer.json
-└─ router.php
-```
+### `admins`
 
-## React Structure Added
+- `id`
+- `name`
+- `email`
+- `password`
+- `created_at`
 
-```text
-src/
-├─ Components/
-│  ├─ AppointmentTable.jsx
-│  ├─ DashboardStats.jsx
-│  └─ ProtectedRoute.jsx
-├─ Pages/
-│  ├─ AdminDashboard.jsx
-│  └─ AdminLogin.jsx
-└─ services/
-   └─ api.js
-```
+### `appointments`
 
-## Database
+- `id`
+- `patient_name`
+- `age`
+- `gender`
+- `phone`
+- `email`
+- `doctor`
+- `appointment_date`
+- `appointment_time`
+- `consultation_type`
+- `consultation_platform`
+- `consultation_message`
+- `blood_pressure`
+- `temperature`
+- `pulse`
+- `past_history` JSON
+- `maternal_history` JSON
+- `form_snapshot` JSON
+- `notes`
+- `address`
+- `created_at`
 
-Database name:
+### `prescriptions`
 
-```text
-clinic_app
-```
+- `id`
+- `doctor_name`
+- `patient_name`
+- `age`
+- `gender`
+- `diagnosis`
+- `medicines` JSON
+- `notes`
+- `created_at`
 
-Tables:
+## Codebase Notes
 
-- `admins`
-- `appointments`
+- The backend auto-creates the configured MySQL database if the MySQL user has permission.
+- The backend also auto-creates the `admins` and `appointments` tables on first use.
+- `form_snapshot` stores a richer copy of the submitted form so the admin dashboard can rebuild the PDF later.
+- The booking API normalizes multiple field name styles. For example, the frontend sends fields like `doctorName`, `appointmentDate`, and `contactNumber`, while the backend stores normalized names such as `doctor`, `appointment_date`, and `phone`.
+- Teleconsultations are stored with `consultation_type`, `consultation_platform`, and `consultation_message`.
+- Admin session data is stored in `localStorage` under `clinic_admin_session`.
+- The frontend lazy-loads route pages and splits vendor/framework/pdf chunks in Vite.
+- Prescriptions can be generated directly from the admin area and saved in MySQL without creating an appointment record first.
+- Some marketing content is still placeholder/demo content, including sample addresses, phone numbers, and emails on public pages.
+- Some links rendered inside marketing pages currently point to routes that are not registered in `src/App.jsx`, so those links fall through to the error page.
 
-The backend now uses MySQL connection settings from `backend/.env`.
+## Local Setup
 
-## Installation
+### Prerequisites
 
-### 1. Frontend
+- Node.js 20+ recommended
+- npm
+- PHP 8.1+
+- MySQL 8+ or compatible
+
+### 1. Install frontend dependencies
 
 ```bash
 npm install
 ```
 
-Optional frontend env:
+### 2. Configure frontend environment
 
-```bash
-copy .env.example .env
+Copy the frontend env file:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-Default frontend API target:
+Default value:
 
-```text
-VITE_API_BASE_URL=http://localhost:8000/api
+```env
+VITE_API_BASE_URL="http://localhost:8000/api"
 ```
 
-### 2. MySQL
+### 3. Configure backend environment
 
-Start your MySQL server with XAMPP, Laragon, or a local MySQL installation.
+Copy the backend env file:
 
-Default local values used in the backend env:
-
-```text
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=clinic_app
-DB_USER=root
-DB_PASS=
+```powershell
+Copy-Item backend\.env.example backend\.env
 ```
 
-### 3. Backend env
+Default backend values:
 
-Copy the example file:
-
-```bash
-copy backend\.env.example backend\.env
-```
-
-Recommended keys:
-
-```text
+```env
 DB_HOST="127.0.0.1"
 DB_PORT="3306"
 DB_NAME="clinic_app"
@@ -172,95 +229,113 @@ JWT_SECRET="change-this-secret-before-production"
 APP_ALLOWED_ORIGINS="http://localhost:5173,http://127.0.0.1:5173"
 ```
 
-### 4. Optional schema import
+### 4. Start MySQL
 
-The backend auto-creates the database and tables if the configured MySQL user has permission.
+Start MySQL through XAMPP, Laragon, WAMP, Docker, or a local server install.
 
-If you prefer to create them manually, import:
+### 5. Start the PHP backend
 
-```text
-backend/database/schema.sql
-```
-
-### 5. Run the backend
-
-From `backend/`:
+Run this from the `backend` directory:
 
 ```powershell
-& "C:\Program Files\php-8.5.3\php.exe" -S localhost:8000 router.php
+php -S localhost:8000 router.php
 ```
 
-### 6. Run the frontend
+The API will be available at `http://localhost:8000/api`.
 
-From the project root:
+### 6. Start the frontend
+
+Run this from the project root:
 
 ```bash
 npm run dev
 ```
 
-## First Admin Setup
+The frontend will typically run at `http://localhost:5173`.
 
-Create the first admin only once:
+## Optional Manual Schema Import
 
-```powershell
-curl.exe -X POST http://localhost:8000/api/admin/create -H "Content-Type: application/json" -d "{\"name\":\"Super Admin\",\"email\":\"admin@clinic.com\",\"password\":\"Admin@12345\"}"
+If you do not want the backend to bootstrap the schema automatically, import:
+
+```text
+backend/database/schema.sql
 ```
 
-After the first admin exists, `POST /api/admin/create` requires a valid admin JWT.
+## First Admin Setup
 
-## Admin Login Flow
+If the `admins` table is empty, you can create the first admin without authentication:
 
-1. Open `/admin/login`
-2. Sign in with admin email and password
-3. JWT token is stored in `localStorage`
-4. Protected API requests send `Authorization: Bearer <token>`
-5. `/admin/dashboard` loads appointments and stats from the backend
+```powershell
+curl.exe -X POST http://localhost:8000/api/admin/create `
+  -H "Content-Type: application/json" `
+  -d "{\"name\":\"Super Admin\",\"email\":\"admin@clinic.com\",\"password\":\"Admin@12345\"}"
+```
 
-## Booking Flow
+Once at least one admin exists, the same endpoint requires a valid admin JWT.
 
-1. User fills `src/Components/AppointmentBookingForm.jsx`
-2. React sends the form data to the backend via `src/services/api.js`
-3. PHP normalizes the payload and stores it in MySQL
-4. On success, the frontend still calls `jsPDF` and downloads the appointment PDF
-5. Admin dashboard can immediately see the new appointment
+## Typical Flow
+
+### Booking flow
+
+1. A patient fills the appointment form on `/contact` or `/abc`.
+2. The frontend posts the form to `POST /appointments/create`.
+3. The backend validates and normalizes the payload.
+4. MySQL stores the appointment plus JSON snapshots of history and form data.
+5. The browser generates a PDF download after the save succeeds.
+
+### Admin flow
+
+1. Admin logs in at `/admin/login`.
+2. The API returns a JWT token and admin profile.
+3. The frontend stores the session in `localStorage`.
+4. Protected dashboard requests send `Authorization: Bearer <token>`.
+5. The dashboard loads stats, appointment rows, filters, detail views, and delete actions from the backend.
+
+### Prescription flow
+
+1. Admin opens `/admin/prescription`.
+2. Doctor and patient details are entered along with one or more medicines.
+3. The frontend saves the prescription through `POST /prescriptions/save`.
+4. The browser generates a printable prescription PDF immediately after save.
 
 ## Important Files
 
-- `src/Components/AppointmentBookingForm.jsx` - patient booking UI and backend submit flow
+### Frontend
+
+- `src/App.jsx` - route registration and admin redirect logic
+- `src/Components/AppointmentBookingForm.jsx` - booking UI, validation, API submit flow
+- `src/Pages/AdminLogin.jsx` - admin login page
+- `src/Pages/AdminDashboard.jsx` - dashboard, filters, detail modal, delete flow, PDF re-download
+- `src/Pages/PrescriptionGenerator.jsx` - direct prescription form and save/download flow
 - `src/services/api.js` - frontend API client and admin session helpers
-- `src/Pages/AdminLogin.jsx` - admin authentication page
-- `src/Pages/AdminDashboard.jsx` - admin dashboard, detail modal, delete modal
-- `backend/public/index.php` - backend front controller
-- `backend/routes/api.php` - route dispatcher
-- `backend/controllers/AppointmentController.php` - appointment CRUD logic
-- `backend/controllers/AuthController.php` - admin create/login logic
-- `backend/middleware/auth.php` - JWT guard
-- `backend/config/database.php` - PDO/MySQL connection and auto table bootstrap
-- `backend/database/schema.sql` - manual schema import if needed
+- `src/utils/generateAppointmentPDF.js` - client-side PDF rendering
+- `src/utils/appointmentFormConfig.js` - initial form state and history options
+- `src/data/doctors.js` - doctor metadata used by the form and PDF header
 
-## Validation
+### Backend
 
-Frontend checks completed:
+- `backend/public/index.php` - backend entry point
+- `backend/router.php` - PHP built-in server router
+- `backend/routes/api.php` - API dispatch logic
+- `backend/controllers/AppointmentController.php` - appointment create/list/show/delete
+- `backend/controllers/AuthController.php` - admin create/login
+- `backend/controllers/PrescriptionController.php` - prescription save endpoint
+- `backend/models/Appointment.php` - persistence, filtering, stats, serialization
+- `backend/models/Admin.php` - admin persistence and lookup
+- `backend/models/Prescription.php` - prescription persistence and serialization
+- `backend/middleware/auth.php` - JWT auth guard
+- `backend/config/database.php` - PDO connection and schema bootstrap
+- `backend/config/app.php` - JWT secret, CORS, allowed origins
+- `backend/database/schema.sql` - manual schema creation
 
-- `npm run lint` ✅
-- `npm run build` ✅
+## Verification
 
-Backend note:
+Verified locally on March 11, 2026:
 
-- backend runtime still depends on your local PHP and MySQL setup
+- `npm run lint`
+- `npm run build`
+- `php -v`
 
-## Current Notes
+Current note:
 
-- the frontend and backend are decoupled through `VITE_API_BASE_URL`
-- admin list filtering and pagination are backed by API query parameters
-- the backend accepts the current React form shape and maps it into MySQL rows
-- `past_history` and `maternal_history` are stored as JSON in MySQL
-- the PDF bundle still triggers Vite's large chunk warning because of `jsPDF`
-- sample marketing content and some website CTAs are still placeholder/demo content
-
-## Security Notes
-
-- passwords are hashed with `password_hash`
-- admin routes are protected with JWT middleware
-- login tokens expire automatically
-- move your production DB credentials and JWT secret into secure environment management
+- the production build succeeds, but Vite still reports a large `pdf` chunk warning because `jspdf` is heavy

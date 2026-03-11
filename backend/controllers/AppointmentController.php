@@ -27,6 +27,7 @@ class AppointmentController
             'search' => trim((string) ($_GET['search'] ?? '')),
             'doctor' => trim((string) ($_GET['doctor'] ?? '')),
             'date' => trim((string) ($_GET['date'] ?? '')),
+            'consultation_type' => trim((string) ($_GET['consultation_type'] ?? '')),
             'page' => (int) ($_GET['page'] ?? 1),
             'limit' => (int) ($_GET['limit'] ?? 10),
         ]);
@@ -87,6 +88,15 @@ class AppointmentController
             'doctor' => trim((string) ($payload['doctor'] ?? $payload['doctorName'] ?? '')),
             'appointment_date' => trim((string) ($payload['appointment_date'] ?? $payload['appointmentDate'] ?? '')),
             'appointment_time' => trim((string) ($payload['appointment_time'] ?? $payload['appointmentTime'] ?? '')),
+            'consultation_type' => self::normalizeConsultationType(
+                (string) ($payload['consultation_type'] ?? $payload['consultationType'] ?? '')
+            ),
+            'consultation_platform' => trim(
+                (string) ($payload['consultation_platform'] ?? $payload['consultationPlatform'] ?? '')
+            ),
+            'consultation_message' => trim(
+                (string) ($payload['consultation_message'] ?? $payload['consultationMessage'] ?? '')
+            ),
             'blood_pressure' => trim((string) ($payload['blood_pressure'] ?? $payload['bp'] ?? '')),
             'temperature' => trim((string) ($payload['temperature'] ?? '')),
             'pulse' => trim((string) ($payload['pulse'] ?? $payload['pr'] ?? '')),
@@ -120,6 +130,14 @@ class AppointmentController
 
         if ($payload['appointment_date'] === '') {
             $errors['appointment_date'] = 'Appointment date is required.';
+        }
+
+        if (!in_array($payload['consultation_type'], ['clinic', 'teleconsultation'], true)) {
+            $errors['consultation_type'] = 'Consultation type is invalid.';
+        }
+
+        if ($payload['consultation_type'] === 'teleconsultation' && $payload['consultation_platform'] === '') {
+            $errors['consultation_platform'] = 'Preferred platform is required for teleconsultation.';
         }
 
         if ($payload['email'] !== '' && !filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
@@ -197,6 +215,15 @@ class AppointmentController
             'patient_name' => $patientName,
             'appointmentDate' => trim((string) ($payload['appointmentDate'] ?? $payload['appointment_date'] ?? '')),
             'appointmentTime' => trim((string) ($payload['appointmentTime'] ?? $payload['appointment_time'] ?? '')),
+            'consultationType' => self::normalizeConsultationType(
+                (string) ($payload['consultationType'] ?? $payload['consultation_type'] ?? '')
+            ),
+            'consultationPlatform' => trim(
+                (string) ($payload['consultationPlatform'] ?? $payload['consultation_platform'] ?? '')
+            ),
+            'consultationMessage' => trim(
+                (string) ($payload['consultationMessage'] ?? $payload['consultation_message'] ?? '')
+            ),
             'dateOfBirth' => trim((string) ($payload['dateOfBirth'] ?? '')),
             'age' => trim((string) ($payload['age'] ?? self::calculateAge((string) ($payload['dateOfBirth'] ?? '')))),
             'gender' => trim((string) ($payload['gender'] ?? '')),
@@ -236,5 +263,10 @@ class AppointmentController
         } catch (Throwable) {
             return '';
         }
+    }
+
+    private static function normalizeConsultationType(string $value): string
+    {
+        return trim(strtolower($value)) === 'teleconsultation' ? 'teleconsultation' : 'clinic';
     }
 }

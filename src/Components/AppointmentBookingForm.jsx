@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Hospital, Video } from "lucide-react";
 import { doctorNames } from "../data/doctors";
 import { createAppointment } from "../services/api";
 import {
-  createInitialAppointmentFormData,
+  CONSULTATION_PLATFORM_OPTIONS,
   HISTORY_OPTIONS,
+  createInitialAppointmentFormData,
 } from "../utils/appointmentFormConfig";
 
 function Field({ label, hint, error, required = false, children, className = "" }) {
@@ -51,6 +52,10 @@ function validateAppointmentForm(formData) {
 
   if (!String(formData.appointmentDate ?? "").trim()) {
     errors.appointmentDate = "Appointment date is required.";
+  }
+
+  if (formData.consultationType === "teleconsultation" && !String(formData.consultationPlatform ?? "").trim()) {
+    errors.consultationPlatform = "Choose a preferred teleconsultation platform.";
   }
 
   if (String(formData.email ?? "").trim()) {
@@ -114,17 +119,93 @@ function Toast({ feedback }) {
   };
 
   return (
-    <div className={`fixed right-4 top-24 z-50 max-w-sm rounded-2xl border px-4 py-3 text-sm shadow-lg ${toneClasses[feedback.type]}`}>
+    <div
+      className={`fixed right-4 top-24 z-50 max-w-sm rounded-2xl border px-4 py-3 text-sm shadow-lg ${toneClasses[feedback.type]}`}
+    >
       {feedback.message}
     </div>
   );
 }
 
-export default function AppointmentBookingForm({ title = "Book An Appointment" }) {
-  const [formData, setFormData] = useState(() => createInitialAppointmentFormData(doctorNames));
+function ConsultationTypeCard({
+  value,
+  currentValue,
+  title,
+  description,
+  icon,
+  accentClass,
+  onChange,
+}) {
+  const isActive = currentValue === value;
+  const IconComponent = icon;
+
+  return (
+    <label
+      className={`flex cursor-pointer items-start gap-4 rounded-3xl border p-5 transition ${
+        isActive
+          ? `${accentClass} border-transparent shadow-lg`
+          : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"
+      }`}
+    >
+      <input
+        type="radio"
+        name="consultationType"
+        value={value}
+        checked={isActive}
+        onChange={onChange}
+        className="mt-1 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+      />
+      <div className="flex-1">
+        <div className="flex items-center gap-3">
+          <span
+            className={`rounded-2xl p-3 ${
+              isActive ? "bg-white/90 text-slate-900" : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            <IconComponent size={20} />
+          </span>
+          <div>
+            <p className={`text-base font-semibold ${isActive ? "text-slate-950" : "text-slate-900"}`}>
+              {title}
+            </p>
+            <p className={`mt-1 text-sm ${isActive ? "text-slate-700" : "text-slate-500"}`}>
+              {description}
+            </p>
+          </div>
+        </div>
+      </div>
+    </label>
+  );
+}
+
+export default function AppointmentBookingForm({
+  title = "Book An Appointment",
+  initialConsultationType = "clinic",
+}) {
+  const [formData, setFormData] = useState(() =>
+    createInitialAppointmentFormData(doctorNames, initialConsultationType),
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+
+  useEffect(() => {
+    setFormData((current) => {
+      const nextType =
+        initialConsultationType === "teleconsultation" ? "teleconsultation" : "clinic";
+
+      if (current.consultationType === nextType) {
+        return current;
+      }
+
+      return {
+        ...current,
+        consultationType: nextType,
+        consultationPlatform: nextType === "teleconsultation" ? "Google Meet" : "",
+        consultationMessage: nextType === "teleconsultation" ? current.consultationMessage : "",
+      };
+    });
+  }, [initialConsultationType]);
 
   useEffect(() => {
     if (!feedback) {
@@ -137,10 +218,29 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }));
+
+    setFormData((current) => {
+      const nextState = {
+        ...current,
+        [name]: value,
+      };
+
+      if (name === "consultationType" && value === "clinic") {
+        nextState.consultationPlatform = "";
+        nextState.consultationMessage = "";
+      }
+
+      if (
+        name === "consultationType" &&
+        value === "teleconsultation" &&
+        !String(current.consultationPlatform ?? "").trim()
+      ) {
+        nextState.consultationPlatform = "Google Meet";
+      }
+
+      return nextState;
+    });
+
     setFieldErrors((current) => {
       if (!current[name] && !(name === "firstName" && current.firstName)) {
         return current;
@@ -151,6 +251,11 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
       if (name === "firstName" || name === "lastName") {
         delete nextErrors.firstName;
+      }
+
+      if (name === "consultationType") {
+        delete nextErrors.consultationType;
+        delete nextErrors.consultationPlatform;
       }
 
       return nextErrors;
@@ -224,6 +329,16 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
             return;
           }
 
+          if (key === "consultation_platform") {
+            mappedErrors.consultationPlatform = value;
+            return;
+          }
+
+          if (key === "consultation_type") {
+            mappedErrors.consultationType = value;
+            return;
+          }
+
           mappedErrors[key] = value;
         });
         setFieldErrors(mappedErrors);
@@ -238,6 +353,8 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
     }
   };
 
+  const isTeleconsultation = formData.consultationType === "teleconsultation";
+
   return (
     <div className="space-y-5">
       <Toast feedback={feedback} />
@@ -250,8 +367,82 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
       </div>
 
       <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-slate-600">
-        Patient name, gender, phone, doctor, and appointment date are required. Everything else is optional.
+        Patient name, gender, phone, doctor, and appointment date are required. Choose clinic visit or teleconsultation before submitting.
       </div>
+
+      <Section
+        title="Consultation Type"
+        description="Book an in-person clinic visit or an online consultation from the same form."
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ConsultationTypeCard
+            value="clinic"
+            currentValue={formData.consultationType}
+            title="Visit Clinic"
+            description="Book a standard in-person visit at the clinic."
+            icon={Hospital}
+            accentClass="bg-gradient-to-br from-slate-100 via-white to-slate-50"
+            onChange={handleChange}
+          />
+          <ConsultationTypeCard
+            value="teleconsultation"
+            currentValue={formData.consultationType}
+            title="Teleconsultation (Online)"
+            description="Choose a remote consultation and share your preferred platform in advance."
+            icon={Video}
+            accentClass="bg-gradient-to-br from-cyan-200 via-sky-100 to-blue-200 ring-1 ring-cyan-300/70"
+            onChange={handleChange}
+          />
+        </div>
+
+        {fieldErrors.consultationType ? (
+          <p className="mt-3 text-xs text-red-600">{fieldErrors.consultationType}</p>
+        ) : null}
+
+        {isTeleconsultation ? (
+          <div className="mt-5 grid gap-4 rounded-3xl border border-cyan-200 bg-cyan-50/70 p-5 md:grid-cols-2">
+            <Field
+              label="Preferred Platform"
+              error={fieldErrors.consultationPlatform}
+              required
+            >
+              <select
+                name="consultationPlatform"
+                value={formData.consultationPlatform}
+                onChange={handleChange}
+                className={inputClassName(Boolean(fieldErrors.consultationPlatform))}
+              >
+                {CONSULTATION_PLATFORM_OPTIONS.map((platform) => (
+                  <option key={platform} value={platform}>
+                    {platform}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <div className="rounded-2xl border border-cyan-200 bg-white/80 p-4 text-sm text-slate-600">
+              <p className="font-semibold text-slate-900">Teleconsultation note</p>
+              <p className="mt-2">
+                The selected platform is stored with the appointment so the admin team can prepare the session.
+              </p>
+            </div>
+
+            <Field
+              label="Symptoms or Concerns Before Consultation"
+              hint="Optional. Share context before the online consultation."
+              className="md:col-span-2"
+            >
+              <textarea
+                name="consultationMessage"
+                value={formData.consultationMessage}
+                placeholder="Describe symptoms, follow-up concerns, or what you want to discuss."
+                onChange={handleChange}
+                className={inputClassName(false, "min-h-28 resize-y")}
+              />
+            </Field>
+          </div>
+        ) : null}
+      </Section>
 
       <Section title="Patient Details" description="Core details sent to the backend and shown on the PDF.">
         <div className="grid gap-4 md:grid-cols-2">
@@ -371,7 +562,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
           <Field
             label="Reason / Note"
-            hint="This is stored as notes if you leave the Comments field empty."
+            hint="General visit note stored with the appointment and shown on the PDF."
             className="md:col-span-2"
           >
             <textarea
@@ -379,7 +570,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
               value={formData.message}
               placeholder="Short note about the appointment"
               onChange={handleChange}
-              className={inputClassName("min-h-28 resize-y")}
+              className={inputClassName(false, "min-h-28 resize-y")}
             />
           </Field>
         </div>
@@ -463,7 +654,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
               value={formData.allergy}
               placeholder="Drug or food allergies"
               onChange={handleChange}
-              className={inputClassName("min-h-24 resize-y")}
+              className={inputClassName(false, "min-h-24 resize-y")}
             />
           </Field>
           <Field
@@ -476,7 +667,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
               value={formData.comments}
               placeholder="Any additional comments"
               onChange={handleChange}
-              className={inputClassName("min-h-28 resize-y")}
+              className={inputClassName(false, "min-h-28 resize-y")}
             />
           </Field>
         </div>
@@ -486,9 +677,17 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
         type="button"
         onClick={handleBookAppointment}
         disabled={isSubmitting}
-        className="w-full rounded-xl bg-blue-900 px-5 py-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-wait disabled:bg-blue-700"
+        className={`w-full rounded-xl px-5 py-4 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 disabled:cursor-wait ${
+          isTeleconsultation
+            ? "bg-cyan-600 hover:bg-cyan-500 focus:ring-cyan-200 disabled:bg-cyan-400"
+            : "bg-blue-900 hover:bg-blue-800 focus:ring-blue-200 disabled:bg-blue-700"
+        }`}
       >
-        {isSubmitting ? "Saving Appointment..." : "Book Appointment & Download PDF"}
+        {isSubmitting
+          ? "Saving Appointment..."
+          : isTeleconsultation
+            ? "Book Teleconsultation & Download PDF"
+            : "Book Appointment & Download PDF"}
       </button>
     </div>
   );

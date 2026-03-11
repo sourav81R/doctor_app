@@ -57,11 +57,20 @@ export function createAdmin(payload, token) {
   });
 }
 
-export function getAppointments({ token, search = "", doctor = "", date = "", page = 1, limit = 10 }) {
+export function getAppointments({
+  token,
+  search = "",
+  doctor = "",
+  date = "",
+  consultationType = "",
+  page = 1,
+  limit = 10,
+}) {
   const params = new URLSearchParams({
     search,
     doctor,
     date,
+    consultation_type: consultationType,
     page: String(page),
     limit: String(limit),
   });
@@ -83,6 +92,17 @@ export function deleteAppointment(id, token) {
   return request(`/appointments/${id}`, {
     token,
     method: "DELETE",
+  });
+}
+
+export function savePrescription(payload, token) {
+  return request("/prescriptions/save", {
+    method: "POST",
+    token,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
   });
 }
 

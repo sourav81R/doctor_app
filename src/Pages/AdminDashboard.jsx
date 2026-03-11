@@ -22,6 +22,12 @@ function buildPdfPayloadFromAppointment(appointment) {
       doctorName: appointment.form_snapshot.doctorName ?? appointment.doctor ?? "",
       appointmentDate: appointment.form_snapshot.appointmentDate ?? appointment.appointment_date ?? "",
       appointmentTime: appointment.form_snapshot.appointmentTime ?? appointment.appointment_time ?? "",
+      consultationType:
+        appointment.form_snapshot.consultationType ?? appointment.consultation_type ?? "clinic",
+      consultationPlatform:
+        appointment.form_snapshot.consultationPlatform ?? appointment.consultation_platform ?? "",
+      consultationMessage:
+        appointment.form_snapshot.consultationMessage ?? appointment.consultation_message ?? "",
       address: appointment.form_snapshot.address ?? appointment.address ?? "",
       message: appointment.form_snapshot.message ?? appointment.notes ?? "",
     };
@@ -62,6 +68,9 @@ function buildPdfPayloadFromAppointment(appointment) {
     contactNumber: appointment?.phone ?? "",
     address: appointment?.address ?? "",
     doctorName: appointment?.doctor ?? "",
+    consultationType: appointment?.consultation_type ?? "clinic",
+    consultationPlatform: appointment?.consultation_platform ?? "",
+    consultationMessage: appointment?.consultation_message ?? "",
     message: appointment?.notes ?? "",
   };
 }
@@ -122,6 +131,13 @@ function DetailModal({ appointment, isLoading, onClose }) {
               ["Email", appointment?.email],
               ["Date", appointment?.appointment_date],
               ["Time", appointment?.appointment_time],
+              [
+                "Consultation Type",
+                appointment?.consultation_type === "teleconsultation"
+                  ? "Teleconsultation"
+                  : "Clinic Visit",
+              ],
+              ["Consultation Platform", appointment?.consultation_platform],
               ["Age", appointment?.age],
               ["Gender", appointment?.gender],
               ["Blood Pressure", appointment?.blood_pressure],
@@ -156,6 +172,13 @@ function DetailModal({ appointment, isLoading, onClose }) {
             <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
               <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Notes</p>
               <p className="mt-2 text-sm font-medium text-slate-800">{appointment?.notes || "-"}</p>
+            </div>
+
+            <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
+              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Teleconsultation Message</p>
+              <p className="mt-2 text-sm font-medium text-slate-800">
+                {appointment?.consultation_message || "-"}
+              </p>
             </div>
           </div>
         )}
@@ -208,6 +231,7 @@ export default function AdminDashboard() {
     search: "",
     doctor: "",
     date: "",
+    consultationType: "",
     page: 1,
     limit: 10,
   });
@@ -249,6 +273,7 @@ export default function AdminDashboard() {
         search: filters.search,
         doctor: filters.doctor,
         date: filters.date,
+        consultationType: filters.consultationType,
         page: filters.page,
         limit: filters.limit,
       });
@@ -265,7 +290,7 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.date, filters.doctor, filters.limit, filters.page, filters.search, navigate, token]);
+  }, [filters.consultationType, filters.date, filters.doctor, filters.limit, filters.page, filters.search, navigate, token]);
 
   useEffect(() => {
     loadAppointments();
@@ -393,6 +418,12 @@ export default function AdminDashboard() {
               className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             >
               View Website
+            </Link>
+            <Link
+              to="/admin/prescription"
+              className="rounded-full bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-200"
+            >
+              Generate Prescription
             </Link>
             <button
               type="button"

@@ -16,6 +16,9 @@ class Appointment
                 doctor,
                 appointment_date,
                 appointment_time,
+                consultation_type,
+                consultation_platform,
+                consultation_message,
                 blood_pressure,
                 temperature,
                 pulse,
@@ -33,6 +36,9 @@ class Appointment
                 :doctor,
                 :appointment_date,
                 :appointment_time,
+                :consultation_type,
+                :consultation_platform,
+                :consultation_message,
                 :blood_pressure,
                 :temperature,
                 :pulse,
@@ -53,6 +59,9 @@ class Appointment
             'doctor' => trim((string) ($payload['doctor'] ?? '')),
             'appointment_date' => trim((string) ($payload['appointment_date'] ?? '')),
             'appointment_time' => self::nullableString($payload['appointment_time'] ?? ''),
+            'consultation_type' => self::normalizeConsultationType((string) ($payload['consultation_type'] ?? '')),
+            'consultation_platform' => trim((string) ($payload['consultation_platform'] ?? '')),
+            'consultation_message' => self::nullableString($payload['consultation_message'] ?? ''),
             'blood_pressure' => trim((string) ($payload['blood_pressure'] ?? '')),
             'temperature' => trim((string) ($payload['temperature'] ?? '')),
             'pulse' => trim((string) ($payload['pulse'] ?? '')),
@@ -87,6 +96,11 @@ class Appointment
         if (($filters['date'] ?? '') !== '') {
             $whereClauses[] = 'appointment_date = :appointment_date';
             $params['appointment_date'] = trim((string) $filters['date']);
+        }
+
+        if (($filters['consultation_type'] ?? '') !== '') {
+            $whereClauses[] = 'consultation_type = :consultation_type';
+            $params['consultation_type'] = self::normalizeConsultationType((string) $filters['consultation_type']);
         }
 
         $whereSql = $whereClauses !== [] ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
@@ -126,7 +140,8 @@ class Appointment
             'SELECT
                 COUNT(*) AS total_appointments,
                 COUNT(CASE WHEN appointment_date = CURDATE() THEN 1 END) AS today_appointments,
-                COUNT(DISTINCT CASE WHEN doctor <> "" THEN doctor END) AS doctors_count
+                COUNT(DISTINCT CASE WHEN doctor <> "" THEN doctor END) AS doctors_count,
+                COUNT(CASE WHEN consultation_type = "teleconsultation" THEN 1 END) AS teleconsultation_count
             FROM appointments'
         );
         $stats = $statsStatement->fetch() ?: [];
@@ -142,11 +157,13 @@ class Appointment
                     'search' => (string) ($filters['search'] ?? ''),
                     'doctor' => (string) ($filters['doctor'] ?? ''),
                     'date' => (string) ($filters['date'] ?? ''),
+                    'consultation_type' => (string) ($filters['consultation_type'] ?? ''),
                 ],
                 'stats' => [
                     'total_appointments' => (int) ($stats['total_appointments'] ?? 0),
                     'today_appointments' => (int) ($stats['today_appointments'] ?? 0),
                     'doctors_count' => (int) ($stats['doctors_count'] ?? 0),
+                    'teleconsultation_count' => (int) ($stats['teleconsultation_count'] ?? 0),
                 ],
                 'available_doctors' => array_values($doctorValues),
             ],
@@ -194,6 +211,9 @@ class Appointment
             'doctor' => (string) ($document['doctor'] ?? ''),
             'appointment_date' => (string) ($document['appointment_date'] ?? ''),
             'appointment_time' => (string) ($document['appointment_time'] ?? ''),
+            'consultation_type' => self::normalizeConsultationType((string) ($document['consultation_type'] ?? '')),
+            'consultation_platform' => (string) ($document['consultation_platform'] ?? ''),
+            'consultation_message' => (string) ($document['consultation_message'] ?? ''),
             'blood_pressure' => (string) ($document['blood_pressure'] ?? ''),
             'temperature' => (string) ($document['temperature'] ?? ''),
             'pulse' => (string) ($document['pulse'] ?? ''),
@@ -242,5 +262,10 @@ class Appointment
     {
         $stringValue = trim((string) $value);
         return $stringValue === '' ? null : $stringValue;
+    }
+
+    private static function normalizeConsultationType(string $value): string
+    {
+        return trim(strtolower($value)) === 'teleconsultation' ? 'teleconsultation' : 'clinic';
     }
 }

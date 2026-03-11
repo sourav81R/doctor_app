@@ -22,7 +22,7 @@ export default function AppointmentTable({
 }) {
   return (
     <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr]">
+      <div className="grid gap-3 xl:grid-cols-[2fr_1fr_1fr_1fr]">
         <input
           type="search"
           value={filters.search}
@@ -50,6 +50,16 @@ export default function AppointmentTable({
           onChange={(event) => onFilterChange("date", event.target.value)}
           className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
+
+        <select
+          value={filters.consultationType}
+          onChange={(event) => onFilterChange("consultationType", event.target.value)}
+          className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        >
+          <option value="">All consultation types</option>
+          <option value="clinic">Clinic Visit</option>
+          <option value="teleconsultation">Teleconsultation</option>
+        </select>
       </div>
 
       {appointments.length === 0 ? (
@@ -62,6 +72,7 @@ export default function AppointmentTable({
                 <th className="px-3">ID</th>
                 <th className="px-3">Patient Name</th>
                 <th className="px-3">Doctor</th>
+                <th className="px-3">Consultation Type</th>
                 <th className="px-3">Phone</th>
                 <th className="px-3">Date</th>
                 <th className="px-3">Time</th>
@@ -78,6 +89,25 @@ export default function AppointmentTable({
                   </td>
                   <td className="px-3 py-4 font-semibold text-slate-900">{appointment.patient_name}</td>
                   <td className="px-3 py-4">{appointment.doctor || "-"}</td>
+                  <td className="px-3 py-4">
+                    <div className="space-y-1">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          appointment.consultation_type === "teleconsultation"
+                            ? "bg-cyan-100 text-cyan-800"
+                            : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {appointment.consultation_type === "teleconsultation"
+                          ? "Teleconsultation"
+                          : "Clinic Visit"}
+                      </span>
+                      {appointment.consultation_type === "teleconsultation" &&
+                      appointment.consultation_platform ? (
+                        <p className="text-xs text-slate-500">{appointment.consultation_platform}</p>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-3 py-4">{appointment.phone || "-"}</td>
                   <td className="px-3 py-4">{appointment.appointment_date || "-"}</td>
                   <td className="px-3 py-4">{appointment.appointment_time || "-"}</td>

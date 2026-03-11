@@ -11,6 +11,13 @@ export const HISTORY_OPTIONS = [
   "Surgery",
 ];
 
+export const CONSULTATION_PLATFORM_OPTIONS = [
+  "Google Meet",
+  "Zoom",
+  "WhatsApp Video",
+  "Phone Call",
+];
+
 export function getTodayDateValue() {
   const today = new Date();
   const year = today.getFullYear();
@@ -19,12 +26,21 @@ export function getTodayDateValue() {
   return `${year}-${month}-${day}`;
 }
 
-export function createInitialAppointmentFormData(doctorNames) {
+export function createInitialAppointmentFormData(
+  doctorNames,
+  initialConsultationType = "clinic",
+) {
+  const consultationType =
+    initialConsultationType === "teleconsultation" ? "teleconsultation" : "clinic";
+
   return {
     firstName: "",
     lastName: "",
     appointmentDate: getTodayDateValue(),
     appointmentTime: "",
+    consultationType,
+    consultationPlatform: consultationType === "teleconsultation" ? "Google Meet" : "",
+    consultationMessage: "",
     dateOfBirth: "",
     gender: "",
     email: "",
