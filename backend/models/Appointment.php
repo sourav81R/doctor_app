@@ -21,6 +21,7 @@ class Appointment
                 pulse,
                 past_history,
                 maternal_history,
+                form_snapshot,
                 notes,
                 address
             ) VALUES (
@@ -37,6 +38,7 @@ class Appointment
                 :pulse,
                 :past_history,
                 :maternal_history,
+                :form_snapshot,
                 :notes,
                 :address
             )'
@@ -56,6 +58,7 @@ class Appointment
             'pulse' => trim((string) ($payload['pulse'] ?? '')),
             'past_history' => self::encodeJsonArray($payload['past_history'] ?? []),
             'maternal_history' => self::encodeJsonObject($payload['maternal_history'] ?? []),
+            'form_snapshot' => self::encodeJsonObject($payload['form_snapshot'] ?? []),
             'notes' => self::nullableString($payload['notes'] ?? ''),
             'address' => self::nullableString($payload['address'] ?? ''),
         ]);
@@ -196,6 +199,7 @@ class Appointment
             'pulse' => (string) ($document['pulse'] ?? ''),
             'past_history' => self::decodeJsonArray($document['past_history'] ?? null),
             'maternal_history' => self::decodeJsonObject($document['maternal_history'] ?? null),
+            'form_snapshot' => self::decodeJsonObject($document['form_snapshot'] ?? null),
             'notes' => (string) ($document['notes'] ?? ''),
             'address' => (string) ($document['address'] ?? ''),
             'created_at' => isset($document['created_at']) ? (string) $document['created_at'] : null,

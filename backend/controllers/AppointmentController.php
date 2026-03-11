@@ -92,6 +92,7 @@ class AppointmentController
             'pulse' => trim((string) ($payload['pulse'] ?? $payload['pr'] ?? '')),
             'past_history' => self::extractPastHistory($payload),
             'maternal_history' => self::extractMaternalHistory($payload),
+            'form_snapshot' => self::buildFormSnapshot($payload),
             'notes' => implode(' | ', $notesParts),
             'address' => trim((string) ($payload['address'] ?? '')),
         ];
@@ -162,6 +163,64 @@ class AppointmentController
             'allergy' => trim((string) ($payload['allergy'] ?? '')),
             'comments' => trim((string) ($payload['comments'] ?? '')),
         ], static fn(string $value): bool => $value !== '');
+    }
+
+    private static function buildFormSnapshot(array $payload): array
+    {
+        $patientName = trim((string) ($payload['patient_name'] ?? ''));
+        if ($patientName === '') {
+            $patientName = trim(
+                implode(
+                    ' ',
+                    array_filter([
+                        trim((string) ($payload['firstName'] ?? '')),
+                        trim((string) ($payload['lastName'] ?? '')),
+                    ])
+                )
+            );
+        }
+
+        $nameParts = preg_split('/\s+/', $patientName) ?: [];
+        $medicalHistory = $payload['medicalHistory'] ?? null;
+        if (!is_array($medicalHistory)) {
+            $medicalHistory = [];
+            foreach (self::extractPastHistory($payload) as $item) {
+                $medicalHistory[(string) $item] = true;
+            }
+        }
+
+        $maternalHistory = self::extractMaternalHistory($payload);
+
+        return [
+            'firstName' => trim((string) ($payload['firstName'] ?? ($nameParts[0] ?? ''))),
+            'lastName' => trim((string) ($payload['lastName'] ?? implode(' ', array_slice($nameParts, 1)))),
+            'patient_name' => $patientName,
+            'appointmentDate' => trim((string) ($payload['appointmentDate'] ?? $payload['appointment_date'] ?? '')),
+            'appointmentTime' => trim((string) ($payload['appointmentTime'] ?? $payload['appointment_time'] ?? '')),
+            'dateOfBirth' => trim((string) ($payload['dateOfBirth'] ?? '')),
+            'age' => trim((string) ($payload['age'] ?? self::calculateAge((string) ($payload['dateOfBirth'] ?? '')))),
+            'gender' => trim((string) ($payload['gender'] ?? '')),
+            'email' => trim((string) ($payload['email'] ?? '')),
+            'gcs' => trim((string) ($payload['gcs'] ?? '')),
+            'bp' => trim((string) ($payload['bp'] ?? $payload['blood_pressure'] ?? '')),
+            'pr' => trim((string) ($payload['pr'] ?? $payload['pulse'] ?? '')),
+            'rr' => trim((string) ($payload['rr'] ?? '')),
+            'rbs' => trim((string) ($payload['rbs'] ?? '')),
+            'temperature' => trim((string) ($payload['temperature'] ?? '')),
+            'height' => trim((string) ($payload['height'] ?? '')),
+            'weight' => trim((string) ($payload['weight'] ?? '')),
+            'spo2' => trim((string) ($payload['spo2'] ?? '')),
+            'medicalHistory' => $medicalHistory,
+            'lmp' => trim((string) ($payload['lmp'] ?? ($maternalHistory['lmp'] ?? ''))),
+            'pog' => trim((string) ($payload['pog'] ?? ($maternalHistory['pog'] ?? ''))),
+            'edd' => trim((string) ($payload['edd'] ?? ($maternalHistory['edd'] ?? ''))),
+            'allergy' => trim((string) ($payload['allergy'] ?? ($maternalHistory['allergy'] ?? ''))),
+            'comments' => trim((string) ($payload['comments'] ?? ($maternalHistory['comments'] ?? ''))),
+            'contactNumber' => trim((string) ($payload['contactNumber'] ?? $payload['phone'] ?? '')),
+            'address' => trim((string) ($payload['address'] ?? '')),
+            'doctorName' => trim((string) ($payload['doctorName'] ?? $payload['doctor'] ?? '')),
+            'message' => trim((string) ($payload['message'] ?? $payload['notes'] ?? '')),
+        ];
     }
 
     private static function calculateAge(string $dateOfBirth): string

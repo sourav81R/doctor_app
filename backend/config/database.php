@@ -100,6 +100,7 @@ function ensure_mysql_tables(PDO $pdo): void
             pulse VARCHAR(50) DEFAULT '',
             past_history JSON NULL,
             maternal_history JSON NULL,
+            form_snapshot JSON NULL,
             notes TEXT NULL,
             address TEXT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -110,5 +111,27 @@ function ensure_mysql_tables(PDO $pdo): void
         SQL
     );
 
+    ensure_mysql_column(
+        $pdo,
+        'appointments',
+        'form_snapshot',
+        'ALTER TABLE appointments ADD COLUMN form_snapshot JSON NULL AFTER maternal_history'
+    );
+
     $initialized = true;
+}
+
+function ensure_mysql_column(PDO $pdo, string $table, string $column, string $alterSql): void
+{
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column'
+    );
+    $statement->execute([
+        'table' => $table,
+        'column' => $column,
+    ]);
+
+    if ((int) $statement->fetchColumn() === 0) {
+        $pdo->exec($alterSql);
+    }
 }

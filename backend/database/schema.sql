@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     pulse VARCHAR(50) DEFAULT '',
     past_history JSON NULL,
     maternal_history JSON NULL,
+    form_snapshot JSON NULL,
     notes TEXT NULL,
     address TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

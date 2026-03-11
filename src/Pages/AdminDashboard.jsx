@@ -11,6 +11,22 @@ import {
 } from "../services/api";
 
 function buildPdfPayloadFromAppointment(appointment) {
+  if (appointment?.form_snapshot && typeof appointment.form_snapshot === "object") {
+    return {
+      ...appointment.form_snapshot,
+      patient_name: appointment.form_snapshot.patient_name ?? appointment.patient_name ?? "",
+      age: appointment.form_snapshot.age ?? appointment.age ?? "",
+      gender: appointment.form_snapshot.gender ?? appointment.gender ?? "",
+      email: appointment.form_snapshot.email ?? appointment.email ?? "",
+      contactNumber: appointment.form_snapshot.contactNumber ?? appointment.phone ?? "",
+      doctorName: appointment.form_snapshot.doctorName ?? appointment.doctor ?? "",
+      appointmentDate: appointment.form_snapshot.appointmentDate ?? appointment.appointment_date ?? "",
+      appointmentTime: appointment.form_snapshot.appointmentTime ?? appointment.appointment_time ?? "",
+      address: appointment.form_snapshot.address ?? appointment.address ?? "",
+      message: appointment.form_snapshot.message ?? appointment.notes ?? "",
+    };
+  }
+
   const patientName = String(appointment?.patient_name ?? "").trim();
   const [firstName = patientName, ...restName] = patientName.split(/\s+/).filter(Boolean);
   const maternalHistory = appointment?.maternal_history ?? {};
