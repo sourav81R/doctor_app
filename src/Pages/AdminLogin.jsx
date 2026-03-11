@@ -45,7 +45,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <section className="min-h-screen bg-slate-100 px-4 py-28 sm:px-6">
+    <section className="min-h-screen bg-slate-100 px-4 pb-16 pt-36 sm:px-6 lg:pt-52">
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-[2rem] bg-gradient-to-br from-blue-900 via-blue-700 to-cyan-500 p-8 text-white shadow-xl sm:p-10">
           <p className="text-sm uppercase tracking-[0.2em] text-white/70">Admin Portal</p>

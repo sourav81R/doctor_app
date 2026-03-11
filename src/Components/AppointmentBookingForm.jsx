@@ -7,18 +7,60 @@ import {
   HISTORY_OPTIONS,
 } from "../utils/appointmentFormConfig";
 
-function Field({ label, hint, children, className = "" }) {
+function Field({ label, hint, error, required = false, children, className = "" }) {
   return (
     <label className={`block ${className}`}>
-      <span className="mb-1.5 block text-sm font-medium text-slate-800">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-slate-800">
+        {label}
+        {required ? <span className="ml-1 text-red-500">*</span> : null}
+      </span>
       {children}
+      {error ? <span className="mt-1 block text-xs text-red-600">{error}</span> : null}
       {hint ? <span className="mt-1 block text-xs text-slate-500">{hint}</span> : null}
     </label>
   );
 }
 
-function inputClassName(extraClassName = "") {
-  return `w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${extraClassName}`.trim();
+function inputClassName(hasError = false, extraClassName = "") {
+  return `w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${
+    hasError
+      ? "border-red-300 focus:border-red-500 focus:ring-red-100"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-100"
+  } ${extraClassName}`.trim();
+}
+
+function validateAppointmentForm(formData) {
+  const errors = {};
+  const patientName = [formData.firstName, formData.lastName].filter(Boolean).join(" ").trim();
+
+  if (!patientName) {
+    errors.firstName = "Patient first or last name is required.";
+  }
+
+  if (!String(formData.gender ?? "").trim()) {
+    errors.gender = "Gender is required.";
+  }
+
+  if (!String(formData.contactNumber ?? "").trim()) {
+    errors.contactNumber = "Phone number is required.";
+  }
+
+  if (!String(formData.doctorName ?? "").trim()) {
+    errors.doctorName = "Doctor is required.";
+  }
+
+  if (!String(formData.appointmentDate ?? "").trim()) {
+    errors.appointmentDate = "Appointment date is required.";
+  }
+
+  if (String(formData.email ?? "").trim()) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(String(formData.email).trim())) {
+      errors.email = "Enter a valid email address.";
+    }
+  }
+
+  return errors;
 }
 
 function Section({ title, description, children }) {
@@ -82,6 +124,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
   const [formData, setFormData] = useState(() => createInitialAppointmentFormData(doctorNames));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (!feedback) {
@@ -98,6 +141,20 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
       ...current,
       [name]: value,
     }));
+    setFieldErrors((current) => {
+      if (!current[name] && !(name === "firstName" && current.firstName)) {
+        return current;
+      }
+
+      const nextErrors = { ...current };
+      delete nextErrors[name];
+
+      if (name === "firstName" || name === "lastName") {
+        delete nextErrors.firstName;
+      }
+
+      return nextErrors;
+    });
   };
 
   const handleHistoryChange = (event) => {
@@ -113,6 +170,17 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
   const handleBookAppointment = async () => {
     setFeedback(null);
+    const validationErrors = validateAppointmentForm(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setFeedback({
+        type: "error",
+        message: "Please fill the required appointment fields before submitting.",
+      });
+      return;
+    }
+
+    setFieldErrors({});
     setIsSubmitting(true);
 
     try {
@@ -133,6 +201,34 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
         });
       }
     } catch (submitError) {
+      if (submitError.errors && Object.keys(submitError.errors).length > 0) {
+        const mappedErrors = {};
+        Object.entries(submitError.errors).forEach(([key, value]) => {
+          if (key === "patient_name") {
+            mappedErrors.firstName = value;
+            return;
+          }
+
+          if (key === "phone") {
+            mappedErrors.contactNumber = value;
+            return;
+          }
+
+          if (key === "doctor") {
+            mappedErrors.doctorName = value;
+            return;
+          }
+
+          if (key === "appointment_date") {
+            mappedErrors.appointmentDate = value;
+            return;
+          }
+
+          mappedErrors[key] = value;
+        });
+        setFieldErrors(mappedErrors);
+      }
+
       setFeedback({
         type: "error",
         message: submitError.message || "Unable to save the appointment.",
@@ -159,14 +255,14 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
       <Section title="Patient Details" description="Core details sent to the backend and shown on the PDF.">
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="First Name">
+          <Field label="First Name" error={fieldErrors.firstName} required>
             <input
               type="text"
               name="firstName"
               value={formData.firstName}
               placeholder="Enter first name"
               onChange={handleChange}
-              className={inputClassName()}
+              className={inputClassName(Boolean(fieldErrors.firstName))}
             />
           </Field>
 
@@ -177,17 +273,17 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
               value={formData.lastName}
               placeholder="Enter last name"
               onChange={handleChange}
-              className={inputClassName()}
+              className={inputClassName(Boolean(fieldErrors.firstName))}
             />
           </Field>
 
-          <Field label="Appointment Date">
+          <Field label="Appointment Date" error={fieldErrors.appointmentDate} required>
             <input
               type="date"
               name="appointmentDate"
               value={formData.appointmentDate}
               onChange={handleChange}
-              className={inputClassName()}
+              className={inputClassName(Boolean(fieldErrors.appointmentDate))}
             />
           </Field>
 
@@ -211,12 +307,12 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
             />
           </Field>
 
-          <Field label="Gender">
+          <Field label="Gender" error={fieldErrors.gender} required>
             <select
               name="gender"
               value={formData.gender}
               onChange={handleChange}
-              className={inputClassName()}
+              className={inputClassName(Boolean(fieldErrors.gender))}
             >
               <option value="">Select gender</option>
               <option value="Male">Male</option>
@@ -225,12 +321,12 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
             </select>
           </Field>
 
-          <Field label="Doctor">
+          <Field label="Doctor" error={fieldErrors.doctorName} required>
             <select
               name="doctorName"
               value={formData.doctorName}
               onChange={handleChange}
-              className={inputClassName()}
+              className={inputClassName(Boolean(fieldErrors.doctorName))}
             >
               {doctorNames.map((doctorName) => (
                 <option key={doctorName} value={doctorName}>
@@ -240,25 +336,25 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
             </select>
           </Field>
 
-          <Field label="Contact Number">
+          <Field label="Contact Number" error={fieldErrors.contactNumber} required>
             <input
               type="tel"
               name="contactNumber"
               value={formData.contactNumber}
               placeholder="Phone number"
               onChange={handleChange}
-              className={inputClassName()}
+              className={inputClassName(Boolean(fieldErrors.contactNumber))}
             />
           </Field>
 
-          <Field label="Email">
+          <Field label="Email" error={fieldErrors.email}>
             <input
               type="email"
               name="email"
               value={formData.email}
               placeholder="Patient email"
               onChange={handleChange}
-              className={inputClassName()}
+              className={inputClassName(Boolean(fieldErrors.email))}
             />
           </Field>
 

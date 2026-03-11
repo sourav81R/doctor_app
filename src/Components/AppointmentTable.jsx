@@ -13,8 +13,10 @@ export default function AppointmentTable({
   isLoading,
   page,
   totalPages,
+  downloadingId,
   onFilterChange,
   onPageChange,
+  onDownload,
   onView,
   onDelete,
 }) {
@@ -84,6 +86,14 @@ export default function AppointmentTable({
                   </td>
                   <td className="rounded-r-2xl px-3 py-4">
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onDownload(appointment)}
+                        disabled={downloadingId === appointment.id}
+                        className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-200 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {downloadingId === appointment.id ? "Downloading..." : "Download PDF"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => onView(appointment)}

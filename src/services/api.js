@@ -17,7 +17,10 @@ async function request(path, options = {}) {
     : { success: response.ok, message: await response.text() };
 
   if (!response.ok || payload.success === false) {
-    throw new Error(payload.message || "Request failed.");
+    const error = new Error(payload.message || "Request failed.");
+    error.status = response.status;
+    error.errors = payload.errors ?? {};
+    throw error;
   }
 
   return payload;

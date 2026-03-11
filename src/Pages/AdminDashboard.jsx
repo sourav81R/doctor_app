@@ -10,6 +10,46 @@ import {
   getAppointments,
 } from "../services/api";
 
+function buildPdfPayloadFromAppointment(appointment) {
+  const patientName = String(appointment?.patient_name ?? "").trim();
+  const [firstName = patientName, ...restName] = patientName.split(/\s+/).filter(Boolean);
+  const maternalHistory = appointment?.maternal_history ?? {};
+  const historyMap = Array.isArray(appointment?.past_history)
+    ? Object.fromEntries(appointment.past_history.map((item) => [item, true]))
+    : {};
+
+  return {
+    firstName,
+    lastName: restName.join(" "),
+    patient_name: patientName,
+    appointmentDate: appointment?.appointment_date ?? "",
+    appointmentTime: appointment?.appointment_time ?? "",
+    dateOfBirth: "",
+    age: appointment?.age ?? "",
+    gender: appointment?.gender ?? "",
+    email: appointment?.email ?? "",
+    gcs: "",
+    bp: appointment?.blood_pressure ?? "",
+    pr: appointment?.pulse ?? "",
+    rr: "",
+    rbs: "",
+    temperature: appointment?.temperature ?? "",
+    height: "",
+    weight: "",
+    spo2: "",
+    medicalHistory: historyMap,
+    lmp: maternalHistory.lmp ?? "",
+    pog: maternalHistory.pog ?? "",
+    edd: maternalHistory.edd ?? "",
+    allergy: maternalHistory.allergy ?? "",
+    comments: maternalHistory.comments ?? appointment?.notes ?? "",
+    contactNumber: appointment?.phone ?? "",
+    address: appointment?.address ?? "",
+    doctorName: appointment?.doctor ?? "",
+    message: appointment?.notes ?? "",
+  };
+}
+
 function Toast({ toast }) {
   if (!toast) {
     return null;
@@ -21,7 +61,7 @@ function Toast({ toast }) {
   };
 
   return (
-    <div className={`fixed right-4 top-24 z-50 rounded-2xl border px-4 py-3 text-sm shadow-lg ${toneClasses[toast.type]}`}>
+    <div className={`fixed right-4 top-28 z-50 rounded-2xl border px-4 py-3 text-sm shadow-lg lg:top-44 ${toneClasses[toast.type]}`}>
       {toast.message}
     </div>
   );
@@ -172,6 +212,7 @@ export default function AdminDashboard() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [downloadingAppointmentId, setDownloadingAppointmentId] = useState(null);
 
   useEffect(() => {
     if (!toast) {
@@ -246,6 +287,27 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDownload = async (appointment) => {
+    setDownloadingAppointmentId(appointment.id);
+
+    try {
+      const response = await getAppointment(appointment.id, token);
+      const { generateAppointmentPDF } = await import("../utils/generateAppointmentPDF");
+      await generateAppointmentPDF(buildPdfPayloadFromAppointment(response.data ?? appointment));
+      setToast({
+        type: "success",
+        message: "Appointment PDF downloaded successfully.",
+      });
+    } catch (downloadError) {
+      setToast({
+        type: "error",
+        message: downloadError.message || "Unable to download appointment PDF.",
+      });
+    } finally {
+      setDownloadingAppointmentId(null);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) {
       return;
@@ -285,7 +347,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <section className="min-h-screen bg-slate-100 px-4 py-28 sm:px-6">
+    <section className="min-h-screen bg-slate-100 px-4 pb-16 pt-36 sm:px-6 lg:pt-52">
       <Toast toast={toast} />
       <DetailModal
         appointment={selectedAppointment}
@@ -341,8 +403,10 @@ export default function AdminDashboard() {
           isLoading={isLoading}
           page={filters.page}
           totalPages={meta.total_pages ?? 1}
+          downloadingId={downloadingAppointmentId}
           onFilterChange={handleFilterChange}
           onPageChange={handlePageChange}
+          onDownload={handleDownload}
           onView={handleView}
           onDelete={setDeleteTarget}
         />

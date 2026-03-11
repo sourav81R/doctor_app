@@ -74,8 +74,21 @@ function calculateAge(dateOfBirth) {
   return age >= 0 ? `${age}` : "";
 }
 
+function getAgeValue(formData) {
+  const calculatedAge = calculateAge(formData.dateOfBirth);
+  if (calculatedAge) {
+    return calculatedAge;
+  }
+
+  if (hasValue(formData.age)) {
+    return String(formData.age).trim();
+  }
+
+  return "";
+}
+
 function getPatientName(formData) {
-  return [formData.firstName, formData.lastName].filter(Boolean).join(" ").trim();
+  return [formData.firstName, formData.lastName].filter(Boolean).join(" ").trim() || String(formData.patient_name ?? "").trim();
 }
 
 function getFileName(firstName, lastName) {
@@ -527,7 +540,7 @@ export async function generateAppointmentPDF(formData) {
   const doc = new jsPDF("p", "mm", "a4");
   const doctor = getDoctorByName(formData.doctorName);
   const patientName = getPatientName(formData);
-  const age = calculateAge(formData.dateOfBirth);
+  const age = getAgeValue(formData);
   const ageSex = [age, formData.gender].filter(Boolean).join(" / ");
 
   const { headerLogo, watermarkLogo, painScaleImage } = await getAppointmentAssets();
