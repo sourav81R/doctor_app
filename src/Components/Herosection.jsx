@@ -32,19 +32,23 @@ function HeroSection() {
                             Choose an in-clinic visit or book a teleconsultation with the same care team.
                         </p>
 
-                        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end">
                             <Link
                                 to="/abc?type=clinic"
-                                className="inline-flex w-full justify-center rounded-xl bg-blue-700 px-6 py-3 font-semibold text-white shadow-xl transition duration-300 hover:scale-[1.02] hover:bg-blue-800 sm:w-auto sm:px-8"
+                                className="inline-flex w-full justify-center rounded-xl border border-blue-200 bg-white/80 px-6 py-3 font-semibold text-blue-900 shadow-lg backdrop-blur-sm transition duration-300 hover:scale-[1.02] hover:bg-white sm:w-auto sm:px-8"
                             >
                                 Book Clinic Appointment
                             </Link>
-                            <Link
-                                to="/abc?type=teleconsultation"
-                                className="inline-flex w-full justify-center rounded-xl border border-cyan-300 bg-cyan-100 px-6 py-3 font-semibold text-cyan-950 shadow-lg transition duration-300 hover:scale-[1.02] hover:bg-cyan-200 sm:w-auto sm:px-8"
-                            >
-                                Book Teleconsultation
-                            </Link>
+                            <div className="relative w-full sm:w-auto">
+                                <div className="rounded-2xl bg-cyan-300/35 p-1.5 shadow-[0_0_0_4px_rgba(34,211,238,0.18),0_20px_45px_rgba(14,116,144,0.28)] backdrop-blur-sm">
+                                    <Link
+                                        to="/abc?type=teleconsultation"
+                                        className="inline-flex w-full justify-center rounded-xl border border-cyan-200 bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 px-7 py-4 text-lg font-bold text-white transition duration-300 hover:scale-[1.03] hover:from-cyan-300 hover:via-sky-400 hover:to-blue-500 sm:w-auto sm:min-w-[290px]"
+                                    >
+                                        Book Teleconsultation
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
