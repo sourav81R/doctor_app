@@ -100,8 +100,8 @@ function DetailModal({ appointment, isLoading, onClose }) {
   const maternalHistory = appointment?.maternal_history ?? {};
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
-      <div className="w-full max-w-3xl rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 px-4 py-6 sm:py-8">
+      <div className="mx-auto w-full max-w-3xl rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Appointment</p>
@@ -118,70 +118,72 @@ function DetailModal({ appointment, isLoading, onClose }) {
           </button>
         </div>
 
-        {isLoading ? (
-          <div className="mt-6 rounded-3xl bg-slate-50 p-8 text-center text-sm text-slate-500">
-            Fetching appointment details...
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {[
-              ["Patient Name", appointment?.patient_name],
-              ["Doctor", appointment?.doctor],
-              ["Phone", appointment?.phone],
-              ["Email", appointment?.email],
-              ["Date", appointment?.appointment_date],
-              ["Time", appointment?.appointment_time],
-              [
-                "Consultation Type",
-                appointment?.consultation_type === "teleconsultation"
-                  ? "Teleconsultation"
-                  : "Clinic Visit",
-              ],
-              ["Consultation Platform", appointment?.consultation_platform],
-              ["Age", appointment?.age],
-              ["Gender", appointment?.gender],
-              ["Blood Pressure", appointment?.blood_pressure],
-              ["Temperature", appointment?.temperature],
-              ["Pulse", appointment?.pulse],
-              ["Address", appointment?.address],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{label}</p>
-                <p className="mt-2 text-sm font-medium text-slate-800">{value || "-"}</p>
+        <div className="mt-6 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
+          {isLoading ? (
+            <div className="rounded-3xl bg-slate-50 p-8 text-center text-sm text-slate-500">
+              Fetching appointment details...
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                ["Patient Name", appointment?.patient_name],
+                ["Doctor", appointment?.doctor],
+                ["Phone", appointment?.phone],
+                ["Email", appointment?.email],
+                ["Date", appointment?.appointment_date],
+                ["Time", appointment?.appointment_time],
+                [
+                  "Consultation Type",
+                  appointment?.consultation_type === "teleconsultation"
+                    ? "Teleconsultation"
+                    : "Clinic Visit",
+                ],
+                ["Consultation Platform", appointment?.consultation_platform],
+                ["Age", appointment?.age],
+                ["Gender", appointment?.gender],
+                ["Blood Pressure", appointment?.blood_pressure],
+                ["Temperature", appointment?.temperature],
+                ["Pulse", appointment?.pulse],
+                ["Address", appointment?.address],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{label}</p>
+                  <p className="mt-2 text-sm font-medium text-slate-800">{value || "-"}</p>
+                </div>
+              ))}
+
+              <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Past History</p>
+                <p className="mt-2 text-sm font-medium text-slate-800">
+                  {appointment?.past_history?.length ? appointment.past_history.join(", ") : "-"}
+                </p>
               </div>
-            ))}
 
-            <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Past History</p>
-              <p className="mt-2 text-sm font-medium text-slate-800">
-                {appointment?.past_history?.length ? appointment.past_history.join(", ") : "-"}
-              </p>
-            </div>
+              <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Maternal History</p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {["lmp", "pog", "edd", "allergy", "comments"].map((item) => (
+                    <div key={item} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+                      <span className="font-semibold capitalize">{item}:</span> {maternalHistory[item] || "-"}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Maternal History</p>
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                {["lmp", "pog", "edd", "allergy", "comments"].map((item) => (
-                  <div key={item} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
-                    <span className="font-semibold capitalize">{item}:</span> {maternalHistory[item] || "-"}
-                  </div>
-                ))}
+              <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Notes</p>
+                <p className="mt-2 text-sm font-medium text-slate-800">{appointment?.notes || "-"}</p>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Teleconsultation Message</p>
+                <p className="mt-2 text-sm font-medium text-slate-800">
+                  {appointment?.consultation_message || "-"}
+                </p>
               </div>
             </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Notes</p>
-              <p className="mt-2 text-sm font-medium text-slate-800">{appointment?.notes || "-"}</p>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4 md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Teleconsultation Message</p>
-              <p className="mt-2 text-sm font-medium text-slate-800">
-                {appointment?.consultation_message || "-"}
-              </p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
