@@ -41,18 +41,18 @@ const toggleFAQ = (index) => {
 
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
-                  to="/doctors"
+                  to="/contact"
                   className="px-6 py-3 bg-yellow-400 text-blue-900 font-semibold rounded-md hover:bg-yellow-300 transition"
                 >
                   Find A Doctor
                 </Link>
 
-                <Link
-                  to="/core-values"
+                <a
+                  href="#core-values"
                   className="px-6 py-3 border border-white text-white font-semibold rounded-md hover:bg-white hover:text-blue-900 transition"
                 >
                   Our Core Values
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -91,7 +91,7 @@ const toggleFAQ = (index) => {
 
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
-                to="/doctors"
+                to="/contact"
                 className="px-6 py-3 bg-sky-500 text-white font-semibold rounded-md hover:bg-sky-600 transition"
               >
                 Find A Doctor →
@@ -162,12 +162,12 @@ const toggleFAQ = (index) => {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              <Link
-                to="/core-values"
+              <a
+                href="#core-values"
                 className="px-6 py-3 border border-white text-white rounded-md hover:bg-white hover:text-sky-600 transition"
               >
                 Our Core Values →
-              </Link>
+              </a>
 
               <Link
                 to="/about"
@@ -182,7 +182,7 @@ const toggleFAQ = (index) => {
 
 
       {/* ================= SECTION 4 : CORE FEATURES ================= */}
-      <section className="relative bg-sky-600 py-24 text-white">
+      <section id="core-values" className="relative scroll-mt-40 bg-sky-600 py-24 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
 
           {/* Cards */}
@@ -196,22 +196,22 @@ const toggleFAQ = (index) => {
               {
                 title: "Trusted Medical Treatment",
                 icon: "🎓",
-                link: "/treatments",
+                link: "/services",
               },
               {
                 title: "Emergency Help Available",
                 icon: "🚑",
-                link: "/emergency",
+                link: "/contact",
               },
               {
                 title: "Medical Research",
                 icon: "💊",
-                link: "/research",
+                link: "/about",
               },
               {
                 title: "Only Qualified Doctors",
                 icon: "👨‍⚕️",
-                link: "/doctors",
+                link: "/contact",
               },
             ].map((item, index) => (
               <Link
