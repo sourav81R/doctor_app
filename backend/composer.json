@@ -1,0 +1,11 @@
+{
+  "name": "clinic/appointment-backend",
+  "description": "PHP + MySQL backend for clinic appointments",
+  "type": "project",
+  "require": {
+    "php": "^8.1"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { doctorNames } from "../data/doctors";
+import { createAppointment } from "../services/api";
 import {
   createInitialAppointmentFormData,
   HISTORY_OPTIONS,
@@ -59,9 +60,37 @@ function OptionalSection({ title, description, children }) {
   );
 }
 
+function Toast({ feedback }) {
+  if (!feedback) {
+    return null;
+  }
+
+  const toneClasses = {
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    error: "border-red-200 bg-red-50 text-red-700",
+    warning: "border-amber-200 bg-amber-50 text-amber-700",
+  };
+
+  return (
+    <div className={`fixed right-4 top-24 z-50 max-w-sm rounded-2xl border px-4 py-3 text-sm shadow-lg ${toneClasses[feedback.type]}`}>
+      {feedback.message}
+    </div>
+  );
+}
+
 export default function AppointmentBookingForm({ title = "Book An Appointment" }) {
   const [formData, setFormData] = useState(() => createInitialAppointmentFormData(doctorNames));
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+
+  useEffect(() => {
+    if (!feedback) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setFeedback(null), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [feedback]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -82,33 +111,53 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
     }));
   };
 
-  const handleGeneratePdf = async () => {
+  const handleBookAppointment = async () => {
+    setFeedback(null);
+    setIsSubmitting(true);
+
     try {
-      setIsGeneratingPdf(true);
-      const { generateAppointmentPDF } = await import("../utils/generateAppointmentPDF");
-      await generateAppointmentPDF(formData);
-    } catch (error) {
-      console.error(error);
-      window.alert(error instanceof Error ? error.message : "Unable to generate the appointment PDF.");
+      const response = await createAppointment(formData);
+
+      try {
+        const { generateAppointmentPDF } = await import("../utils/generateAppointmentPDF");
+        await generateAppointmentPDF(formData);
+        setFeedback({
+          type: "success",
+          message: response.data?.message || "Appointment saved and PDF downloaded successfully.",
+        });
+      } catch (pdfError) {
+        console.error(pdfError);
+        setFeedback({
+          type: "warning",
+          message: "Appointment saved, but the PDF could not be generated.",
+        });
+      }
+    } catch (submitError) {
+      setFeedback({
+        type: "error",
+        message: submitError.message || "Unable to save the appointment.",
+      });
     } finally {
-      setIsGeneratingPdf(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="space-y-5">
+      <Toast feedback={feedback} />
+
       <div className="space-y-2">
         <h3 className="text-2xl font-semibold text-slate-900">{title}</h3>
         <p className="text-sm text-slate-600">
-          Fill the basic details first. Open the optional sections only when you want those values printed in the PDF.
+          Fill the patient details first. After a successful submission, the appointment is saved to the backend and the PDF is downloaded.
         </p>
       </div>
 
       <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-slate-600">
-        Start with patient name, appointment date, gender, and doctor. Everything else is optional.
+        Patient name, gender, phone, doctor, and appointment date are required. Everything else is optional.
       </div>
 
-      <Section title="Patient Details" description="Basic details shown at the top of the PDF.">
+      <Section title="Patient Details" description="Core details sent to the backend and shown on the PDF.">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="First Name">
             <input
@@ -137,6 +186,16 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
               type="date"
               name="appointmentDate"
               value={formData.appointmentDate}
+              onChange={handleChange}
+              className={inputClassName()}
+            />
+          </Field>
+
+          <Field label="Appointment Time">
+            <input
+              type="time"
+              name="appointmentTime"
+              value={formData.appointmentTime}
               onChange={handleChange}
               className={inputClassName()}
             />
@@ -192,6 +251,17 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
             />
           </Field>
 
+          <Field label="Email">
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              placeholder="Patient email"
+              onChange={handleChange}
+              className={inputClassName()}
+            />
+          </Field>
+
           <Field label="Address" className="md:col-span-2">
             <input
               type="text"
@@ -205,7 +275,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
           <Field
             label="Reason / Note"
-            hint="This is used as the main comment on the PDF if you do not fill the Comments field below."
+            hint="This is stored as notes if you leave the Comments field empty."
             className="md:col-span-2"
           >
             <textarea
@@ -221,7 +291,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
       <OptionalSection
         title="Vitals"
-        description="Fill only the values you want printed on the template."
+        description="Fill only the values you want printed and stored."
       >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="GCS">
@@ -239,6 +309,9 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
           <Field label="RBS">
             <input type="text" name="rbs" value={formData.rbs} placeholder="Random blood sugar" onChange={handleChange} className={inputClassName()} />
           </Field>
+          <Field label="Temperature">
+            <input type="text" name="temperature" value={formData.temperature} placeholder="Example: 98.6 F" onChange={handleChange} className={inputClassName()} />
+          </Field>
           <Field label="Height">
             <input type="text" name="height" value={formData.height} placeholder="Example: 170 cm" onChange={handleChange} className={inputClassName()} />
           </Field>
@@ -253,7 +326,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
 
       <OptionalSection
         title="Past History"
-        description="Select the conditions that should be marked on the template."
+        description="Select the conditions that should be saved and marked on the template."
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {HISTORY_OPTIONS.map((item) => (
@@ -299,7 +372,7 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
           </Field>
           <Field
             label="Comments"
-            hint="This prints inside the template comments box."
+            hint="This prints inside the template comments box and is stored with the appointment."
             className="md:col-span-3"
           >
             <textarea
@@ -314,11 +387,12 @@ export default function AppointmentBookingForm({ title = "Book An Appointment" }
       </OptionalSection>
 
       <button
-        onClick={handleGeneratePdf}
-        disabled={isGeneratingPdf}
+        type="button"
+        onClick={handleBookAppointment}
+        disabled={isSubmitting}
         className="w-full rounded-xl bg-blue-900 px-5 py-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-wait disabled:bg-blue-700"
       >
-        {isGeneratingPdf ? "Preparing PDF..." : "Generate PDF and Download"}
+        {isSubmitting ? "Saving Appointment..." : "Book Appointment & Download PDF"}
       </button>
     </div>
   );
