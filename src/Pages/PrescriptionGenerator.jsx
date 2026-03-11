@@ -258,7 +258,9 @@ export default function PrescriptionGenerator() {
         <div className="rounded-[2rem] bg-white p-6 shadow-sm sm:p-8">
           <div className="grid gap-5 md:grid-cols-2">
             <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">Doctor Name</span>
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Doctor Name <span className="text-red-500">*</span>
+              </span>
               <input
                 list="doctor-options"
                 name="doctorName"
@@ -278,7 +280,9 @@ export default function PrescriptionGenerator() {
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">Patient Name</span>
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Patient Name <span className="text-red-500">*</span>
+              </span>
               <input
                 name="patientName"
                 value={formData.patientName}
@@ -329,7 +333,9 @@ export default function PrescriptionGenerator() {
             </label>
 
             <label className="block md:col-span-2">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">Diagnosis</span>
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Diagnosis <span className="text-red-500">*</span>
+              </span>
               <textarea
                 name="diagnosis"
                 value={formData.diagnosis}
@@ -346,7 +352,9 @@ export default function PrescriptionGenerator() {
           <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Medicines</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Medicines <span className="text-red-500">*</span>
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Add one or more medicine rows with dosage timing and duration.
                 </p>
