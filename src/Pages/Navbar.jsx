@@ -8,6 +8,7 @@ const menuItems = [
   { name: "About Us", path: "/about" },
   { name: "Services", path: "/services" },
   { name: "Contact", path: "/contact" },
+  { name: "Admin", path: "/admin" },
 ];
 
 const contactItems = [
