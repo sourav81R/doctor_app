@@ -555,9 +555,26 @@ function drawSupplementalDetails(doc, formData) {
     ? String(formData.secondarySummaryValue ?? "")
     : String(formData.consultationMessage ?? "");
   const columnTopY = 170;
+  const useLeftAlignedSummary = formData.detailLayout === "left";
   const hasCenterDetails =
     hasValue(primarySummaryLabel) && hasValue(primarySummaryValue) ||
     hasValue(primarySummaryExtraLabel) && hasValue(primarySummaryExtraValue);
+  const centerColumnX = useLeftAlignedSummary ? 10 : 68;
+  const centerColumnWidth = useLeftAlignedSummary ? 48 : 38;
+  const rightColumnX = useLeftAlignedSummary
+    ? hasCenterDetails
+      ? 68
+      : 10
+    : hasCenterDetails
+      ? 118
+      : 68;
+  const rightColumnWidth = useLeftAlignedSummary
+    ? hasCenterDetails
+      ? 124
+      : 182
+    : hasCenterDetails
+      ? 74
+      : 124;
 
   let leftColumnY = columnTopY;
   leftColumnY = drawDetailBlock(doc, "Contact", formData.contactNumber, 10, leftColumnY, 48, {
@@ -572,19 +589,25 @@ function drawSupplementalDetails(doc, formData) {
     doc,
     primarySummaryLabel,
     primarySummaryValue,
-    68,
+    centerColumnX,
     centerColumnY,
-    38,
+    centerColumnWidth,
     {
       maxLines: 3,
     },
   );
-  drawDetailBlock(doc, primarySummaryExtraLabel, primarySummaryExtraValue, 68, centerColumnY, 38, {
-    maxLines: 3,
-  });
+  drawDetailBlock(
+    doc,
+    primarySummaryExtraLabel,
+    primarySummaryExtraValue,
+    centerColumnX,
+    centerColumnY,
+    centerColumnWidth,
+    {
+      maxLines: 3,
+    },
+  );
 
-  const rightColumnX = hasCenterDetails ? 118 : 68;
-  const rightColumnWidth = hasCenterDetails ? 74 : 124;
   let rightColumnY = columnTopY;
 
   rightColumnY = drawDetailBlock(
@@ -691,6 +714,7 @@ export async function generatePrescriptionPDF(data) {
     consultationType: "",
     consultationPlatform: "",
     consultationMessage: "",
+    detailLayout: "left",
     summaryLabel: "Diagnosis",
     summaryValue: String(data.diagnosis ?? "").trim(),
     secondarySummaryLabel: "Medicines",
