@@ -329,6 +329,34 @@ function drawWrappedValue(doc, value, x, y, width, options = {}) {
   return y + visibleLines.length * lineHeight;
 }
 
+function drawDetailBlock(doc, label, value, x, y, width, options = {}) {
+  if (!hasValue(label) || !hasValue(value)) {
+    return y;
+  }
+
+  const {
+    labelFontSize = 8.6,
+    valueFontSize = 8,
+    lineHeight = 3.8,
+    maxLines = 3,
+    valueOffset = 5,
+    blockGap = 5,
+  } = options;
+
+  doc.setFont("courier", "bold");
+  doc.setFontSize(labelFontSize);
+  doc.setTextColor(...COLORS.ink);
+  doc.text(`${label}:`, x, y);
+
+  const nextY = drawWrappedValue(doc, value, x, y + valueOffset, width, {
+    fontSize: valueFontSize,
+    maxLines,
+    lineHeight,
+  });
+
+  return nextY + blockGap;
+}
+
 function drawWatermark(doc, watermarkLogo) {
   if (watermarkLogo) {
     const width = 140;
@@ -498,28 +526,6 @@ function drawMaternalBox(doc, formData) {
 function drawSupplementalDetails(doc, formData) {
   drawWatermark(doc, formData.watermarkLogo);
 
-  let bodyY = 170;
-
-  if (hasValue(formData.contactNumber)) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(8.6);
-    doc.setTextColor(...COLORS.ink);
-    doc.text("Contact:", 10, bodyY);
-    doc.text(String(formData.contactNumber), 10, bodyY + 5);
-    bodyY += 15;
-  }
-
-  if (hasValue(formData.address)) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(8.6);
-    doc.text("Address:", 10, bodyY);
-    bodyY = drawWrappedValue(doc, formData.address, 10, bodyY + 5, 50, {
-      fontSize: 8,
-      maxLines: 3,
-      lineHeight: 3.8,
-    }) + 4;
-  }
-
   const primarySummaryLabel = hasValue(formData.summaryLabel)
     ? String(formData.summaryLabel)
     : hasValue(formData.consultationType)
@@ -548,50 +554,53 @@ function drawSupplementalDetails(doc, formData) {
   const secondarySummaryValue = hasValue(formData.secondarySummaryLabel)
     ? String(formData.secondarySummaryValue ?? "")
     : String(formData.consultationMessage ?? "");
+  const columnTopY = 170;
+  const hasCenterDetails =
+    hasValue(primarySummaryLabel) && hasValue(primarySummaryValue) ||
+    hasValue(primarySummaryExtraLabel) && hasValue(primarySummaryExtraValue);
 
-  if (hasValue(primarySummaryLabel) && hasValue(primarySummaryValue)) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(8.6);
-    doc.text(`${primarySummaryLabel}:`, 68, 197);
-    drawWrappedValue(doc, primarySummaryValue, 68, 202, 42, {
-      fontSize: 8,
+  let leftColumnY = columnTopY;
+  leftColumnY = drawDetailBlock(doc, "Contact", formData.contactNumber, 10, leftColumnY, 48, {
+    maxLines: 2,
+  });
+  drawDetailBlock(doc, "Address", formData.address, 10, leftColumnY, 50, {
+    maxLines: 3,
+  });
+
+  let centerColumnY = columnTopY;
+  centerColumnY = drawDetailBlock(
+    doc,
+    primarySummaryLabel,
+    primarySummaryValue,
+    68,
+    centerColumnY,
+    38,
+    {
       maxLines: 3,
-      lineHeight: 3.8,
-    });
-  }
+    },
+  );
+  drawDetailBlock(doc, primarySummaryExtraLabel, primarySummaryExtraValue, 68, centerColumnY, 38, {
+    maxLines: 3,
+  });
 
-  if (hasValue(primarySummaryExtraLabel) && hasValue(primarySummaryExtraValue)) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(8.6);
-    doc.text(`${primarySummaryExtraLabel}:`, 68, 210);
-    drawWrappedValue(doc, primarySummaryExtraValue, 68, 215, 42, {
-      fontSize: 8,
-      maxLines: 3,
-      lineHeight: 3.8,
-    });
-  }
+  const rightColumnX = hasCenterDetails ? 118 : 68;
+  const rightColumnWidth = hasCenterDetails ? 74 : 124;
+  let rightColumnY = columnTopY;
 
-  if (hasValue(secondarySummaryLabel) && hasValue(secondarySummaryValue)) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(8.6);
-    doc.text(`${secondarySummaryLabel}:`, 118, 197);
-    drawWrappedValue(doc, secondarySummaryValue, 118, 202, 74, {
-      fontSize: 8,
+  rightColumnY = drawDetailBlock(
+    doc,
+    secondarySummaryLabel,
+    secondarySummaryValue,
+    rightColumnX,
+    rightColumnY,
+    rightColumnWidth,
+    {
       maxLines: 6,
-      lineHeight: 3.8,
-    });
-  }
-
-  if (hasValue(formData.message)) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(8.6);
-    doc.text("Notes:", 68, 227);
-    drawWrappedValue(doc, formData.message, 68, 232, 76, {
-      fontSize: 8,
-      maxLines: 6,
-      lineHeight: 3.8,
-    });
-  }
+    },
+  );
+  drawDetailBlock(doc, "Notes", formData.message, rightColumnX, rightColumnY, rightColumnWidth, {
+    maxLines: 6,
+  });
 }
 
 function drawTemplate(doc, doctor, formData, patientName, ageSex, headerLogo, watermarkLogo, painScaleImage) {
